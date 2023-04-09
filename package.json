@@ -1,0 +1,54 @@
+{
+  "name": "dagsync",
+  "version": "1.0.0",
+  "description": "SSB replication using Kleppmann's hash graph sync",
+  "author": "Andre Staltz <contact@staltz.com>",
+  "license": "CC0-1.0",
+  "homepage": "https://github.com/staltz/dagsync",
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:staltz/dagsync.git"
+  },
+  "main": "index.js",
+  "files": [
+    "*.js",
+    "lib/*.js",
+    "compat/*.js"
+  ],
+  "engines": {
+    "node": ">=16"
+  },
+  "dependencies": {
+    "bloom-filters": "^3.0.0",
+    "debug": "^4.3.4",
+    "multicb": "^1.2.2",
+    "pull-stream": "^3.7.0",
+    "push-stream": "^11.2.0",
+    "push-stream-to-pull-stream": "^1.0.5",
+    "ssb-network-errors": "^1.0.1"
+  },
+  "devDependencies": {
+    "bs58": "^5.0.0",
+    "ppppp-db": "../db",
+    "rimraf": "^4.4.0",
+    "secret-stack": "^6.4.1",
+    "ssb-box": "^1.0.1",
+    "ssb-caps": "^1.1.0",
+    "ssb-classic": "^1.1.0",
+    "ssb-keys": "^8.5.0",
+    "ssb-uri2": "^2.4.1",
+    "tap-arc": "^0.3.5",
+    "tape": "^5.6.3"
+  },
+  "scripts": {
+    "test": "tape test/*.js | tap-arc --bail",
+    "format-code": "prettier --write \"*.js\" \"(test|compat|indexes|operators)/*.js\"",
+    "format-code-staged": "pretty-quick --staged --pattern \"*.js\" --pattern \"(test|compat|indexes|operators)/*.js\"",
+    "coverage": "c8 --reporter=lcov npm run test"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "npm run format-code-staged"
+    }
+  }
+}
