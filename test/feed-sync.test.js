@@ -4,6 +4,7 @@ const os = require('os')
 const rimraf = require('rimraf')
 const SecretStack = require('secret-stack')
 const caps = require('ssb-caps')
+const FeedV1 = require('ppppp-db/lib/feed-v1')
 const p = require('util').promisify
 const { generateKeypair } = require('./util')
 
@@ -12,7 +13,7 @@ const createPeer = SecretStack({ appKey: caps.shs })
   .use(require('ssb-box'))
   .use(require('../'))
 
-test('sync a sliced classic feed', async (t) => {
+test('sync a normal feed', async (t) => {
   const ALICE_DIR = path.join(os.tmpdir(), 'dagsync-alice')
   const BOB_DIR = path.join(os.tmpdir(), 'dagsync-bob')
 
@@ -47,13 +48,23 @@ test('sync a sliced classic feed', async (t) => {
   }
   t.pass('alice has msgs 1..10 from carol')
 
+  let carolRootMsg = null
+  for (const msg of alice.db.msgs()) {
+    if (msg.metadata.who === carolID_b58 && !msg.content) {
+      carolRootMsg = msg
+      break
+    }
+  }
+  const carolRootHash = FeedV1.getMsgHash(carolRootMsg)
+
+  await p(bob.db.add)(carolRootMsg, carolRootHash)
   for (let i = 0; i < 7; i++) {
-    await p(bob.db.add)(carolMsgs[i])
+    await p(bob.db.add)(carolMsgs[i], carolRootHash)
   }
 
   {
     const arr = [...bob.db.msgs()]
-      .filter((msg) => msg.metadata.who === carolID_b58)
+      .filter((msg) => msg.metadata.who === carolID_b58 && msg.content)
       .map((msg) => msg.content.text)
     t.deepEquals(
       arr,
@@ -65,13 +76,13 @@ test('sync a sliced classic feed', async (t) => {
   const remoteAlice = await p(bob.connect)(alice.getAddress())
   t.pass('bob connected to alice')
 
-  bob.feedSync.request(carolPostFeedId)
+  bob.threadSync.request(carolRootHash)
   await p(setTimeout)(1000)
-  t.pass('feedSync!')
+  t.pass('tangleSync!')
 
   {
     const arr = [...bob.db.msgs()]
-      .filter((msg) => msg.metadata.who === carolID_b58)
+      .filter((msg) => msg.metadata.who === carolID_b58 && msg.content)
       .map((msg) => msg.content.text)
     t.deepEquals(
       arr,
@@ -84,6 +95,9 @@ test('sync a sliced classic feed', async (t) => {
   await p(alice.close)(true)
   await p(bob.close)(true)
 })
+
+// FIXME:
+test.skip('sync a sliced feed', async (t) => {})
 
 // FIXME:
 test.skip('delete old msgs and sync latest msgs', async (t) => {
