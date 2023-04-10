@@ -76,7 +76,7 @@ test('sync a normal feed', async (t) => {
   const remoteAlice = await p(bob.connect)(alice.getAddress())
   t.pass('bob connected to alice')
 
-  bob.threadSync.request(carolRootHash)
+  bob.tangleSync.request(carolRootHash)
   await p(setTimeout)(1000)
   t.pass('tangleSync!')
 
