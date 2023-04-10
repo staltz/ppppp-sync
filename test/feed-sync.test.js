@@ -48,14 +48,8 @@ test('sync a normal feed', async (t) => {
   }
   t.pass('alice has msgs 1..10 from carol')
 
-  let carolRootMsg = null
-  for (const msg of alice.db.msgs()) {
-    if (msg.metadata.who === carolID_b58 && !msg.content) {
-      carolRootMsg = msg
-      break
-    }
-  }
-  const carolRootHash = FeedV1.getMsgHash(carolRootMsg)
+  const carolRootHash = alice.db.getFeedRoot(carolID, 'post')
+  const carolRootMsg = alice.db.get(carolRootHash)
 
   await p(bob.db.add)(carolRootMsg, carolRootHash)
   for (let i = 0; i < 7; i++) {
