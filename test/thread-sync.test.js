@@ -150,10 +150,13 @@ test('sync a thread where both peers have portions', async (t) => {
     'bob has another portion of the thread'
   )
 
+  bob.tangleSync.setGoal(startA.hash, 'all')
+  alice.tangleSync.setGoal(startA.hash, 'all')
+
   const remoteAlice = await p(bob.connect)(alice.getAddress())
   t.pass('bob connected to alice')
 
-  bob.tangleSync.request(startA.hash)
+  bob.tangleSync.initiate()
   await p(setTimeout)(1000)
   t.pass('tangleSync!')
 
