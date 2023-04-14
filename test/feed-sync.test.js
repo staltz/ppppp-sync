@@ -36,8 +36,7 @@ test('sync a normal feed', async (t) => {
   const carolKeys = generateKeypair('carol')
   const carolMsgs = []
   const carolID = carolKeys.id
-  const carolID_b58 = carolID.split('ppppp:feed/v1/')[1]
-  const carolPostFeedId = carolID + '/post'
+  const carolID_b58 = FeedV1.stripAuthor(carolID)
   for (let i = 1; i <= 10; i++) {
     const rec = await p(alice.db.create)({
       type: 'post',
