@@ -29,6 +29,7 @@
   },
   "devDependencies": {
     "bs58": "^5.0.0",
+    "c8": "7",
     "ppppp-db": "../db",
     "rimraf": "^4.4.0",
     "secret-stack": "^6.4.1",
