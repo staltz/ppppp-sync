@@ -12,7 +12,7 @@ const { generateKeypair } = require('./util')
 const createPeer = SecretStack({ appKey: caps.shs })
   .use(require('ppppp-db'))
   .use(require('ssb-box'))
-  .use(require('../'))
+  .use(require('../lib'))
 
 const ALICE_DIR = path.join(os.tmpdir(), 'dagsync-alice')
 const BOB_DIR = path.join(os.tmpdir(), 'dagsync-bob')

@@ -12,9 +12,13 @@
   "main": "index.js",
   "files": [
     "*.js",
-    "lib/*.js",
-    "compat/*.js"
+    "lib/*.js"
   ],
+  "exports": {
+    ".": {
+      "require": "./lib/index.js"
+    }
+  },
   "type": "commonjs",
   "engines": {
     "node": ">=16"
