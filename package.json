@@ -15,6 +15,7 @@
     "lib/*.js",
     "compat/*.js"
   ],
+  "type": "commonjs",
   "engines": {
     "node": ">=16"
   },
