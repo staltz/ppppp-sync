@@ -1,13 +1,13 @@
 {
-  "name": "dagsync",
+  "name": "ppppp-tangle-sync",
   "version": "1.0.0",
-  "description": "SSB replication using Kleppmann's hash graph sync",
+  "description": "PPPPP replication using Kleppmann's hash graph sync",
   "author": "Andre Staltz <contact@staltz.com>",
   "license": "CC0-1.0",
-  "homepage": "https://github.com/staltz/dagsync",
+  "homepage": "https://github.com/staltz/ppppp-tangle-sync",
   "repository": {
     "type": "git",
-    "url": "git@github.com:staltz/dagsync.git"
+    "url": "git@github.com:staltz/ppppp-tangle-sync.git"
   },
   "main": "index.js",
   "files": [
