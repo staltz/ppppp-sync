@@ -229,8 +229,8 @@ test('sync a feed with goal=newest but too far behind', async (t) => {
     t.deepEquals(arr, ['m1', 'm2'], 'bob has msgs 1..2 from carol')
   }
 
-  alice.tangleSync.setGoal(carolRootHash, 'newest-5')
-  bob.tangleSync.setGoal(carolRootHash, 'newest-5')
+  alice.tangleSync.setFeedGoal(carolID, 'post', 'newest-5')
+  bob.tangleSync.setFeedGoal(carolID, 'post', 'newest-5')
 
   const remoteAlice = await p(bob.connect)(alice.getAddress())
   t.pass('bob connected to alice')
