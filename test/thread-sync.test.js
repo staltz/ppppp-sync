@@ -14,6 +14,10 @@ const createSSB = SecretStack({ appKey: caps.shs })
   .use(require('ssb-box'))
   .use(require('../'))
 
+function getTexts(iter) {
+  return [...iter].filter((msg) => msg.content).map((msg) => msg.content.text)
+}
+
 /*
 BEFORE dagsync:
 ```mermaid
@@ -134,10 +138,6 @@ test('sync a thread where both peers have portions', async (t) => {
     keys: daveKeys,
   })
 
-  function getTexts(iter) {
-    return [...iter].filter((msg) => msg.content).map((msg) => msg.content.text)
-  }
-
   t.deepEquals(
     getTexts(alice.db.msgs()),
     ['A', 'B1', 'B2', 'C1'],
@@ -177,21 +177,22 @@ test('sync a thread where both peers have portions', async (t) => {
   await p(bob.close)(true)
 })
 
-// FIXME:
-test.skip('sync a thread where first peer does not have the root', async (t) => {
+test('sync a thread where one peer does not have the root', async (t) => {
   const ALICE_DIR = path.join(os.tmpdir(), 'dagsync-alice')
   const BOB_DIR = path.join(os.tmpdir(), 'dagsync-bob')
 
   rimraf.sync(ALICE_DIR)
   rimraf.sync(BOB_DIR)
 
+  const aliceKeys = generateKeypair('alice')
   const alice = createSSB({
-    keys: ssbKeys.generate('ed25519', 'alice'),
+    keys: aliceKeys,
     path: ALICE_DIR,
   })
 
+  const bobKeys = generateKeypair('bob')
   const bob = createSSB({
-    keys: ssbKeys.generate('ed25519', 'bob'),
+    keys: bobKeys,
     path: BOB_DIR,
   })
 
@@ -199,48 +200,49 @@ test.skip('sync a thread where first peer does not have the root', async (t) => 
   await bob.db.loaded()
 
   const rootA = await p(alice.db.create)({
-    feedFormat: 'classic',
-    content: { type: 'post', text: 'A' },
-    keys: alice.config.keys,
+    type: 'post',
+    content: { text: 'A' },
+    keys: aliceKeys,
   })
 
   await p(setTimeout)(10)
 
   const replyA1 = await p(alice.db.create)({
-    feedFormat: 'classic',
-    content: { type: 'post', text: 'A1', root: rootA.key, branch: rootA.key },
-    keys: alice.config.keys,
+    type: 'post',
+    content: { text: 'A1' },
+    tangles: [rootA.hash],
+    keys: aliceKeys,
   })
 
   await p(setTimeout)(10)
 
   const replyA2 = await p(alice.db.create)({
-    feedFormat: 'classic',
-    content: { type: 'post', text: 'A2', root: rootA.key, branch: replyA1.key },
-    keys: alice.config.keys,
+    type: 'post',
+    content: { text: 'A2' },
+    tangles: [rootA.hash],
+    keys: aliceKeys,
   })
 
   t.deepEquals(
-    alice.db.filterAsArray((msg) => true).map((msg) => msg.value.content.text),
+    getTexts(alice.db.msgs()),
     ['A', 'A1', 'A2'],
     'alice has the full thread'
   )
 
-  t.deepEquals(
-    bob.db.filterAsArray((msg) => true).map((msg) => msg.value.content.text),
-    [],
-    'bob has nothing'
-  )
+  t.deepEquals(getTexts(bob.db.msgs()), [], 'bob has nothing')
+
+  bob.tangleSync.setGoal(rootA.hash, 'all')
+  alice.tangleSync.setGoal(rootA.hash, 'all')
 
   const remoteAlice = await p(bob.connect)(alice.getAddress())
   t.pass('bob connected to alice')
 
-  bob.threadSync.request(rootA.key)
+  bob.tangleSync.initiate()
   await p(setTimeout)(1000)
-  t.pass('threadSync!')
+  t.pass('tangleSync!')
 
   t.deepEquals(
-    bob.db.filterAsArray((msg) => true).map((msg) => msg.value.content.text),
+    getTexts(bob.db.msgs()),
     ['A', 'A1', 'A2'],
     'bob has the full thread'
   )
