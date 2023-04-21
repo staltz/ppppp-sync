@@ -297,3 +297,76 @@ test('sync a thread where receiver does not have the root', async (t) => {
   await p(alice.close)(true)
   await p(bob.close)(true)
 })
+
+test('sync a thread with reactions too', async (t) => {
+  rimraf.sync(ALICE_DIR)
+  rimraf.sync(BOB_DIR)
+
+  const alice = createSSB({
+    keys: aliceKeys,
+    path: ALICE_DIR,
+  })
+
+  const bob = createSSB({
+    keys: bobKeys,
+    path: BOB_DIR,
+  })
+
+  await alice.db.loaded()
+  await bob.db.loaded()
+
+  const rootA = await p(alice.db.create)({
+    type: 'post',
+    content: { text: 'A' },
+    keys: aliceKeys,
+  })
+
+  const replyA1 = await p(alice.db.create)({
+    type: 'post',
+    content: { text: 'A1' },
+    tangles: [rootA.hash],
+    keys: aliceKeys,
+  })
+
+  const replyA2 = await p(alice.db.create)({
+    type: 'post',
+    content: { text: 'A2' },
+    tangles: [rootA.hash],
+    keys: aliceKeys,
+  })
+
+  const reactionA3 = await p(alice.db.create)({
+    type: 'reaction',
+    content: {text: 'yes', link: replyA1.hash},
+    tangles: [rootA.hash, replyA1.hash],
+    keys: aliceKeys,
+  })
+
+  t.deepEquals(
+    getTexts(alice.db.msgs()),
+    ['A', 'A1', 'A2', 'yes'],
+    'alice has the full thread'
+  )
+
+  t.deepEquals(getTexts(bob.db.msgs()), [], 'bob has nothing')
+
+  bob.tangleSync.setGoal(rootA.hash, 'all')
+  alice.tangleSync.setGoal(rootA.hash, 'all')
+
+  const remoteBob = await p(alice.connect)(bob.getAddress())
+  t.pass('alice connected to bob')
+
+  alice.tangleSync.initiate()
+  await p(setTimeout)(1000)
+  t.pass('tangleSync!')
+
+  t.deepEquals(
+    getTexts(bob.db.msgs()),
+    ['A', 'A1', 'A2', 'yes'],
+    'bob has the full thread'
+  )
+
+  await p(remoteBob.close)(true)
+  await p(alice.close)(true)
+  await p(bob.close)(true)
+})
