@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "PPPPP replication using Kleppmann's hash graph sync",
   "author": "Andre Staltz <contact@staltz.com>",
-  "license": "CC0-1.0",
+  "license": "MIT",
   "homepage": "https://github.com/staltz/ppppp-tangle-sync",
   "repository": {
     "type": "git",
