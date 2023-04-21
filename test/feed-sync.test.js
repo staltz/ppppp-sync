@@ -14,20 +14,22 @@ const createPeer = SecretStack({ appKey: caps.shs })
   .use(require('ssb-box'))
   .use(require('../'))
 
-test('sync a feed with goal=all', async (t) => {
-  const ALICE_DIR = path.join(os.tmpdir(), 'dagsync-alice')
-  const BOB_DIR = path.join(os.tmpdir(), 'dagsync-bob')
+const ALICE_DIR = path.join(os.tmpdir(), 'dagsync-alice')
+const BOB_DIR = path.join(os.tmpdir(), 'dagsync-bob')
+const aliceKeys = generateKeypair('alice')
+const bobKeys = generateKeypair('bob')
 
+test('sync a feed with goal=all', async (t) => {
   rimraf.sync(ALICE_DIR)
   rimraf.sync(BOB_DIR)
 
   const alice = createPeer({
-    keys: generateKeypair('alice'),
+    keys: aliceKeys,
     path: ALICE_DIR,
   })
 
   const bob = createPeer({
-    keys: generateKeypair('bob'),
+    keys: bobKeys,
     path: BOB_DIR,
   })
 
@@ -94,19 +96,16 @@ test('sync a feed with goal=all', async (t) => {
 })
 
 test('sync a feed with goal=newest', async (t) => {
-  const ALICE_DIR = path.join(os.tmpdir(), 'dagsync-alice')
-  const BOB_DIR = path.join(os.tmpdir(), 'dagsync-bob')
-
   rimraf.sync(ALICE_DIR)
   rimraf.sync(BOB_DIR)
 
   const alice = createPeer({
-    keys: generateKeypair('alice'),
+    keys: aliceKeys,
     path: ALICE_DIR,
   })
 
   const bob = createPeer({
-    keys: generateKeypair('bob'),
+    keys: bobKeys,
     path: BOB_DIR,
   })
 
@@ -172,20 +171,17 @@ test('sync a feed with goal=newest', async (t) => {
   await p(bob.close)(true)
 })
 
-test('with goal=newest but too far behind', async (t) => {
-  const ALICE_DIR = path.join(os.tmpdir(), 'dagsync-alice')
-  const BOB_DIR = path.join(os.tmpdir(), 'dagsync-bob')
-
+test('sync a feed with goal=newest but too far behind', async (t) => {
   rimraf.sync(ALICE_DIR)
   rimraf.sync(BOB_DIR)
 
   const alice = createPeer({
-    keys: generateKeypair('alice'),
+    keys: aliceKeys,
     path: ALICE_DIR,
   })
 
   const bob = createPeer({
-    keys: generateKeypair('bob'),
+    keys: bobKeys,
     path: BOB_DIR,
   })
 
