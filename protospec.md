@@ -86,7 +86,10 @@ interface Data4567 extends WithId {
 
 interface Data8 extends WithId {
   phase: 8,
-  payload: Array<string>,
+  payload: {
+    msgs: Array<Msg>,
+    bloom: string,
+  }
 }
 
 interface Data9 extends WithId {
@@ -94,11 +97,5 @@ interface Data9 extends WithId {
   payload: Array<Msg>,
 }
 
-type Data = {
-  id: string, // TangleID: msg hash of the tangle's root msg
-  phase: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10,
-  payload: {
-
-  }
-}
+type Data = Data1 | Data2 | Data3 | Data4567 | Data8 | Data9
 ```
