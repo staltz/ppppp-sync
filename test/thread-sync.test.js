@@ -337,7 +337,7 @@ test('sync a thread with reactions too', async (t) => {
 
   const reactionA3 = await p(alice.db.create)({
     type: 'reaction',
-    content: {text: 'yes', link: replyA1.hash},
+    content: { text: 'yes', link: replyA1.hash },
     tangles: [rootA.hash, replyA1.hash],
     keys: aliceKeys,
   })
