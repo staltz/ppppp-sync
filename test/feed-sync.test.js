@@ -64,7 +64,7 @@ test('sync a feed with goal=all', async (t) => {
   }
   t.pass('alice has msgs 1..10 from carol')
 
-  const carolPostsRootHash = alice.db.feed.getRoot(carolId, 'post')
+  const carolPostsRootHash = alice.db.feed.getId(carolId, 'post')
   const carolPostsRootMsg = alice.db.get(carolPostsRootHash)
 
   await p(bob.db.add)(carolPostsRootMsg, carolPostsRootHash)
@@ -155,7 +155,7 @@ test('sync a feed with goal=newest', async (t) => {
   }
   t.pass('alice has msgs 1..10 from carol')
 
-  const carolPostsRootHash = alice.db.feed.getRoot(carolId, 'post')
+  const carolPostsRootHash = alice.db.feed.getId(carolId, 'post')
   const carolPostsRootMsg = alice.db.get(carolPostsRootHash)
 
   await p(bob.db.add)(carolPostsRootMsg, carolPostsRootHash)
@@ -245,7 +245,7 @@ test('sync a feed with goal=newest but too far behind', async (t) => {
     carolMsgs.push(rec.msg)
   }
 
-  const carolPostsRootHash = alice.db.feed.getRoot(carolId, 'post')
+  const carolPostsRootHash = alice.db.feed.getId(carolId, 'post')
   const carolPostsRootMsg = alice.db.get(carolPostsRootHash)
 
   const algo = new Algorithm(alice)

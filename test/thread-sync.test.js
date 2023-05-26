@@ -114,7 +114,7 @@ test('sync a thread where both peers have portions', async (t) => {
     data: { text: 'A' },
     keys: aliceKeys,
   })
-  const rootHashA = alice.db.feed.getRoot(aliceId, 'post')
+  const rootHashA = alice.db.feed.getId(aliceId, 'post')
   const rootMsgA = alice.db.get(rootHashA)
 
   await p(bob.db.add)(rootMsgA, rootHashA)
@@ -135,7 +135,7 @@ test('sync a thread where both peers have portions', async (t) => {
     tangles: [startA.hash],
     keys: bobKeys,
   })
-  const rootHashB = bob.db.feed.getRoot(bobId, 'post')
+  const rootHashB = bob.db.feed.getId(bobId, 'post')
   const rootMsgB = bob.db.get(rootHashB)
 
   await p(alice.db.add)(rootMsgB, rootHashB)
