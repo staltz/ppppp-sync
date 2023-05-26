@@ -4,6 +4,7 @@ const os = require('os')
 const rimraf = require('rimraf')
 const SecretStack = require('secret-stack')
 const caps = require('ssb-caps')
+const MsgV2 = require('ppppp-db/msg-v2')
 const p = require('util').promisify
 const { generateKeypair } = require('./util')
 
@@ -18,7 +19,9 @@ const aliceKeys = generateKeypair('alice')
 const bobKeys = generateKeypair('bob')
 
 function getTexts(iter) {
-  return [...iter].filter((msg) => msg.content).map((msg) => msg.content.text)
+  return [...iter]
+    .filter((msg) => msg.metadata.group && msg.data)
+    .map((msg) => msg.data.text)
 }
 
 /*
@@ -72,56 +75,80 @@ test('sync a thread where both peers have portions', async (t) => {
     path: BOB_DIR,
   })
 
+  await alice.db.loaded()
+  const aliceGroupMsg0 = MsgV2.createGroup(aliceKeys, 'alice')
+  const aliceId = MsgV2.getMsgHash(aliceGroupMsg0)
+  await p(alice.db.add)(aliceGroupMsg0, aliceId)
+
+  await bob.db.loaded()
+  const bobGroupMsg0 = MsgV2.createGroup(bobKeys, 'bob')
+  const bobId = MsgV2.getMsgHash(bobGroupMsg0)
+  await p(bob.db.add)(bobGroupMsg0, bobId)
+
   const carolKeys = generateKeypair('carol')
-  const carolID = carolKeys.id
+  const carolGroupMsg0 = MsgV2.createGroup(carolKeys, 'carol')
+  const carolId = MsgV2.getMsgHash(carolGroupMsg0)
 
   const daveKeys = generateKeypair('dave')
-  const daveID = daveKeys.id
+  const daveGroupMsg0 = MsgV2.createGroup(daveKeys, 'dave')
+  const daveId = MsgV2.getMsgHash(daveGroupMsg0)
 
-  await alice.db.loaded()
-  await bob.db.loaded()
+  // Alice knows Bob, Carol, and Dave
+  await p(alice.db.add)(bobGroupMsg0, bobId)
+  await p(alice.db.add)(carolGroupMsg0, carolId)
+  await p(alice.db.add)(daveGroupMsg0, daveId)
 
-  const startA = await p(alice.db.create)({
+  // Bob knows Alice, Carol, and Dave
+  await p(bob.db.add)(aliceGroupMsg0, aliceId)
+  await p(bob.db.add)(carolGroupMsg0, carolId)
+  await p(bob.db.add)(daveGroupMsg0, daveId)
+
+  const startA = await p(alice.db.feed.publish)({
+    group: aliceId,
     type: 'post',
-    content: { text: 'A' },
+    data: { text: 'A' },
     keys: aliceKeys,
   })
-  const rootHashA = alice.db.getFeedRoot(aliceKeys.id, 'post')
+  const rootHashA = alice.db.feed.getRoot(aliceId, 'post')
   const rootMsgA = alice.db.get(rootHashA)
 
   await p(bob.db.add)(rootMsgA, rootHashA)
   await p(bob.db.add)(startA.msg, rootHashA)
 
-  const replyB1 = await p(bob.db.create)({
+  const replyB1 = await p(bob.db.feed.publish)({
+    group: bobId,
     type: 'post',
-    content: { text: 'B1' },
+    data: { text: 'B1' },
     tangles: [startA.hash],
     keys: bobKeys,
   })
 
-  const replyB2 = await p(bob.db.create)({
+  const replyB2 = await p(bob.db.feed.publish)({
+    group: bobId,
     type: 'post',
-    content: { text: 'B2' },
+    data: { text: 'B2' },
     tangles: [startA.hash],
     keys: bobKeys,
   })
-  const rootHashB = bob.db.getFeedRoot(bobKeys.id, 'post')
+  const rootHashB = bob.db.feed.getRoot(bobId, 'post')
   const rootMsgB = bob.db.get(rootHashB)
 
   await p(alice.db.add)(rootMsgB, rootHashB)
   await p(alice.db.add)(replyB1.msg, rootHashB)
   await p(alice.db.add)(replyB2.msg, rootHashB)
 
-  const replyC1 = await p(alice.db.create)({
+  const replyC1 = await p(alice.db.feed.publish)({
+    group: carolId,
     type: 'post',
-    content: { text: 'C1' },
+    data: { text: 'C1' },
     tangles: [startA.hash],
     keys: carolKeys,
   })
 
-  const replyD1 = await p(bob.db.create)({
+  const replyD1 = await p(bob.db.feed.publish)({
+    group: daveId,
     type: 'post',
-    content: { text: 'D1' },
+    data: { text: 'D1' },
     tangles: [startA.hash],
     keys: daveKeys,
   })
@@ -180,24 +207,40 @@ test('sync a thread where initiator does not have the root', async (t) => {
   })
 
   await alice.db.loaded()
-  await bob.db.loaded()
+  const aliceGroupMsg0 = MsgV2.createGroup(aliceKeys, 'alice')
+  const aliceId = MsgV2.getMsgHash(aliceGroupMsg0)
+  await p(alice.db.add)(aliceGroupMsg0, aliceId)
 
-  const rootA = await p(alice.db.create)({
+  await bob.db.loaded()
+  const bobGroupMsg0 = MsgV2.createGroup(bobKeys, 'bob')
+  const bobId = MsgV2.getMsgHash(bobGroupMsg0)
+  await p(bob.db.add)(bobGroupMsg0, bobId)
+
+  // Alice knows Bob
+  await p(alice.db.add)(bobGroupMsg0, bobId)
+
+  // Bob knows Alice
+  await p(bob.db.add)(aliceGroupMsg0, aliceId)
+
+  const rootA = await p(alice.db.feed.publish)({
+    group: aliceId,
     type: 'post',
-    content: { text: 'A' },
+    data: { text: 'A' },
     keys: aliceKeys,
   })
 
-  const replyA1 = await p(alice.db.create)({
+  const replyA1 = await p(alice.db.feed.publish)({
+    group: aliceId,
     type: 'post',
-    content: { text: 'A1' },
+    data: { text: 'A1' },
     tangles: [rootA.hash],
     keys: aliceKeys,
   })
 
-  const replyA2 = await p(alice.db.create)({
+  const replyA2 = await p(alice.db.feed.publish)({
+    group: aliceId,
     type: 'post',
-    content: { text: 'A2' },
+    data: { text: 'A2' },
     tangles: [rootA.hash],
     keys: aliceKeys,
   })
@@ -247,24 +290,40 @@ test('sync a thread where receiver does not have the root', async (t) => {
   })
 
   await alice.db.loaded()
-  await bob.db.loaded()
+  const aliceGroupMsg0 = MsgV2.createGroup(aliceKeys, 'alice')
+  const aliceId = MsgV2.getMsgHash(aliceGroupMsg0)
+  await p(alice.db.add)(aliceGroupMsg0, aliceId)
 
-  const rootA = await p(alice.db.create)({
+  await bob.db.loaded()
+  const bobGroupMsg0 = MsgV2.createGroup(bobKeys, 'bob')
+  const bobId = MsgV2.getMsgHash(bobGroupMsg0)
+  await p(bob.db.add)(bobGroupMsg0, bobId)
+
+  // Alice knows Bob
+  await p(alice.db.add)(bobGroupMsg0, bobId)
+
+  // Bob knows Alice
+  await p(bob.db.add)(aliceGroupMsg0, aliceId)
+
+  const rootA = await p(alice.db.feed.publish)({
+    group: aliceId,
     type: 'post',
-    content: { text: 'A' },
+    data: { text: 'A' },
     keys: aliceKeys,
   })
 
-  const replyA1 = await p(alice.db.create)({
+  const replyA1 = await p(alice.db.feed.publish)({
+    group: aliceId,
     type: 'post',
-    content: { text: 'A1' },
+    data: { text: 'A1' },
     tangles: [rootA.hash],
     keys: aliceKeys,
   })
 
-  const replyA2 = await p(alice.db.create)({
+  const replyA2 = await p(alice.db.feed.publish)({
+    group: aliceId,
     type: 'post',
-    content: { text: 'A2' },
+    data: { text: 'A2' },
     tangles: [rootA.hash],
     keys: aliceKeys,
   })
@@ -313,31 +372,48 @@ test('sync a thread with reactions too', async (t) => {
   })
 
   await alice.db.loaded()
+  const aliceGroupMsg0 = MsgV2.createGroup(aliceKeys, 'alice')
+  const aliceId = MsgV2.getMsgHash(aliceGroupMsg0)
+  await p(alice.db.add)(aliceGroupMsg0, aliceId)
+
   await bob.db.loaded()
+  const bobGroupMsg0 = MsgV2.createGroup(bobKeys, 'bob')
+  const bobId = MsgV2.getMsgHash(bobGroupMsg0)
+  await p(bob.db.add)(bobGroupMsg0, bobId)
 
-  const rootA = await p(alice.db.create)({
+  // Alice knows Bob
+  await p(alice.db.add)(bobGroupMsg0, bobId)
+
+  // Bob knows Alice
+  await p(bob.db.add)(aliceGroupMsg0, aliceId)
+
+  const rootA = await p(alice.db.feed.publish)({
+    group: aliceId,
     type: 'post',
-    content: { text: 'A' },
+    data: { text: 'A' },
     keys: aliceKeys,
   })
 
-  const replyA1 = await p(alice.db.create)({
+  const replyA1 = await p(alice.db.feed.publish)({
+    group: aliceId,
     type: 'post',
-    content: { text: 'A1' },
+    data: { text: 'A1' },
     tangles: [rootA.hash],
     keys: aliceKeys,
   })
 
-  const replyA2 = await p(alice.db.create)({
+  const replyA2 = await p(alice.db.feed.publish)({
+    group: aliceId,
     type: 'post',
-    content: { text: 'A2' },
+    data: { text: 'A2' },
     tangles: [rootA.hash],
     keys: aliceKeys,
   })
 
-  const reactionA3 = await p(alice.db.create)({
+  const reactionA3 = await p(alice.db.feed.publish)({
+    group: aliceId,
     type: 'reaction',
-    content: { text: 'yes', link: replyA1.hash },
+    data: { text: 'yes', link: replyA1.hash },
     tangles: [rootA.hash, replyA1.hash],
     keys: aliceKeys,
   })
