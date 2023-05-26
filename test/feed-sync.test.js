@@ -4,7 +4,6 @@ const os = require('os')
 const rimraf = require('rimraf')
 const SecretStack = require('secret-stack')
 const caps = require('ssb-caps')
-const MsgV2 = require('ppppp-db/msg-v2')
 const p = require('util').promisify
 const Algorithm = require('../lib/algorithm')
 const { generateKeypair } = require('./util')
@@ -34,20 +33,24 @@ test('sync a feed with goal=all', async (t) => {
   })
 
   await alice.db.loaded()
-  const aliceGroupMsg0 = MsgV2.createGroup(aliceKeys, 'alice')
-  const aliceId = MsgV2.getMsgHash(aliceGroupMsg0)
-  await p(alice.db.add)(aliceGroupMsg0, aliceId)
+  const aliceGroupRec0 = await p(alice.db.group.create)({ _nonce: 'alice' })
+  const aliceId = aliceGroupRec0.hash
+  await p(alice.db.add)(aliceGroupRec0.msg, aliceId)
 
   await bob.db.loaded()
-  const bobGroupMsg0 = MsgV2.createGroup(bobKeys, 'bob')
-  const bobId = MsgV2.getMsgHash(bobGroupMsg0)
-  await p(bob.db.add)(bobGroupMsg0, bobId)
+  const bobGroupRec0 = await p(bob.db.group.create)({ _nonce: 'bob' })
+  const bobId = bobGroupRec0.hash
+  await p(bob.db.add)(bobGroupRec0.msg, bobId)
 
   const carolKeys = generateKeypair('carol')
-  const carolGroupMsg0 = MsgV2.createGroup(carolKeys, 'carol')
-  const carolId = MsgV2.getMsgHash(carolGroupMsg0)
-  await p(alice.db.add)(carolGroupMsg0, carolId)
-  await p(bob.db.add)(carolGroupMsg0, carolId)
+  const carolGroupRec0 = await p(alice.db.group.create)({
+    keys: carolKeys,
+    _nonce: 'carol',
+  })
+  const carolId = carolGroupRec0.hash
+
+  // Bob knows Alice
+  await p(bob.db.add)(carolGroupRec0.msg, carolId)
 
   const carolMsgs = []
   for (let i = 1; i <= 10; i++) {
@@ -121,20 +124,24 @@ test('sync a feed with goal=newest', async (t) => {
   })
 
   await alice.db.loaded()
-  const aliceGroupMsg0 = MsgV2.createGroup(aliceKeys, 'alice')
-  const aliceId = MsgV2.getMsgHash(aliceGroupMsg0)
-  await p(alice.db.add)(aliceGroupMsg0, aliceId)
+  const aliceGroupRec0 = await p(alice.db.group.create)({ _nonce: 'alice' })
+  const aliceId = aliceGroupRec0.hash
+  await p(alice.db.add)(aliceGroupRec0.msg, aliceId)
 
   await bob.db.loaded()
-  const bobGroupMsg0 = MsgV2.createGroup(bobKeys, 'bob')
-  const bobId = MsgV2.getMsgHash(bobGroupMsg0)
-  await p(bob.db.add)(bobGroupMsg0, bobId)
+  const bobGroupRec0 = await p(bob.db.group.create)({ _nonce: 'bob' })
+  const bobId = bobGroupRec0.hash
+  await p(bob.db.add)(bobGroupRec0.msg, bobId)
 
   const carolKeys = generateKeypair('carol')
-  const carolGroupMsg0 = MsgV2.createGroup(carolKeys, 'carol')
-  const carolId = MsgV2.getMsgHash(carolGroupMsg0)
-  await p(alice.db.add)(carolGroupMsg0, carolId)
-  await p(bob.db.add)(carolGroupMsg0, carolId)
+  const carolGroupRec0 = await p(alice.db.group.create)({
+    keys: carolKeys,
+    _nonce: 'carol',
+  })
+  const carolId = carolGroupRec0.hash
+
+  // Bob knows Alice
+  await p(bob.db.add)(carolGroupRec0.msg, carolId)
 
   const carolMsgs = []
   for (let i = 1; i <= 10; i++) {
@@ -208,20 +215,24 @@ test('sync a feed with goal=newest but too far behind', async (t) => {
   })
 
   await alice.db.loaded()
-  const aliceGroupMsg0 = MsgV2.createGroup(aliceKeys, 'alice')
-  const aliceId = MsgV2.getMsgHash(aliceGroupMsg0)
-  await p(alice.db.add)(aliceGroupMsg0, aliceId)
+  const aliceGroupRec0 = await p(alice.db.group.create)({ _nonce: 'alice' })
+  const aliceId = aliceGroupRec0.hash
+  await p(alice.db.add)(aliceGroupRec0.msg, aliceId)
 
   await bob.db.loaded()
-  const bobGroupMsg0 = MsgV2.createGroup(bobKeys, 'bob')
-  const bobId = MsgV2.getMsgHash(bobGroupMsg0)
-  await p(bob.db.add)(bobGroupMsg0, bobId)
+  const bobGroupRec0 = await p(bob.db.group.create)({ _nonce: 'bob' })
+  const bobId = bobGroupRec0.hash
+  await p(bob.db.add)(bobGroupRec0.msg, bobId)
 
   const carolKeys = generateKeypair('carol')
-  const carolGroupMsg0 = MsgV2.createGroup(carolKeys, 'carol')
-  const carolId = MsgV2.getMsgHash(carolGroupMsg0)
-  await p(alice.db.add)(carolGroupMsg0, carolId)
-  await p(bob.db.add)(carolGroupMsg0, carolId)
+  const carolGroupRec0 = await p(alice.db.group.create)({
+    keys: carolKeys,
+    _nonce: 'carol',
+  })
+  const carolId = carolGroupRec0.hash
+
+  // Bob knows Alice
+  await p(bob.db.add)(carolGroupRec0.msg, carolId)
 
   const carolMsgs = []
   for (let i = 1; i <= 10; i++) {
