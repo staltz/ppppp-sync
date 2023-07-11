@@ -1,61 +1,47 @@
 const test = require('tape')
-const path = require('path')
-const os = require('os')
-const rimraf = require('rimraf')
-const SecretStack = require('secret-stack')
-const caps = require('ssb-caps')
 const p = require('util').promisify
-const { generateKeypair } = require('./util')
+const Keypair = require('ppppp-keypair')
+const { createPeer } = require('./util')
 
-const createSSB = SecretStack({ appKey: caps.shs })
-  .use(require('ppppp-db'))
-  .use(require('ssb-box'))
-  .use(require('../lib'))
-
-const ALICE_DIR = path.join(os.tmpdir(), 'dagsync-alice')
-const BOB_DIR = path.join(os.tmpdir(), 'dagsync-bob')
-const aliceKeys = generateKeypair('alice')
-const bobKeys = generateKeypair('bob')
+const aliceKeypair = Keypair.generate('ed25519', 'alice')
+const bobKeys = Keypair.generate('ed25519', 'bob')
 
 function getIdentity(iter) {
   return [...iter]
-    .filter((msg) => msg.metadata.group === null && msg.data)
+    .filter((msg) => msg.metadata.identity === 'self' && msg.data)
     .map((msg) => msg.data.add)
 }
 
 test('sync an identity tangle', async (t) => {
-  rimraf.sync(ALICE_DIR)
-  rimraf.sync(BOB_DIR)
-
-  const alice = createSSB({
-    keys: aliceKeys,
-    path: ALICE_DIR,
-  })
-
-  const bob = createSSB({
-    keys: bobKeys,
-    path: BOB_DIR,
-  })
+  const alice = createPeer({ name: 'alice', keypair: aliceKeypair })
+  const bob = createPeer({ name: 'bob', keypair: bobKeys })
 
   await alice.db.loaded()
   await bob.db.loaded()
 
   // Alice's identity tangle
   await alice.db.loaded()
-  const aliceGroupRec0 = await p(alice.db.group.create)({ _nonce: 'alice' })
-  const aliceId = aliceGroupRec0.hash
-  await p(alice.db.add)(aliceGroupRec0.msg, aliceId)
+  const aliceID = await p(alice.db.identity.create)({
+    domain: 'account',
+    _nonce: 'alice',
+  })
 
-  const aliceKeys1 = generateKeypair('alice1')
-  await p(alice.db.group.add)({ group: aliceId, keys: aliceKeys1 })
+  const aliceKeypair1 = Keypair.generate('ed25519', 'alice1')
+  await p(alice.db.identity.add)({
+    identity: aliceID,
+    keypair: aliceKeypair1,
+  })
 
-  const aliceKeys2 = generateKeypair('alice2')
-  await p(alice.db.group.add)({ group: aliceId, keys: aliceKeys2 })
+  const aliceKeypair2 = Keypair.generate('ed25519', 'alice2')
+  await p(alice.db.identity.add)({
+    identity: aliceID,
+    keypair: aliceKeypair2,
+  })
 
   t.deepEquals(
     getIdentity(alice.db.msgs()),
-    [aliceKeys.id, aliceKeys1.id, aliceKeys2.id],
-    "alice has her identity tangle"
+    [aliceKeypair.public, aliceKeypair1.public, aliceKeypair2.public],
+    'alice has her identity tangle'
   )
 
   t.deepEquals(
@@ -64,8 +50,8 @@ test('sync an identity tangle', async (t) => {
     "bob doesn't have alice's identity tangle"
   )
 
-  bob.tangleSync.setGoal(aliceId, 'all')
-  alice.tangleSync.setGoal(aliceId, 'all')
+  bob.tangleSync.setGoal(aliceID, 'all')
+  alice.tangleSync.setGoal(aliceID, 'all')
 
   const remoteAlice = await p(bob.connect)(alice.getAddress())
   t.pass('bob connected to alice')
@@ -76,7 +62,7 @@ test('sync an identity tangle', async (t) => {
 
   t.deepEquals(
     getIdentity(bob.db.msgs()),
-    [aliceKeys.id, aliceKeys1.id, aliceKeys2.id],
+    [aliceKeypair.public, aliceKeypair1.public, aliceKeypair2.public],
     "bob has alice's identity tangle"
   )
 

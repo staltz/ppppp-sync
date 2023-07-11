@@ -1,70 +1,41 @@
 const test = require('tape')
-const path = require('path')
-const os = require('os')
-const rimraf = require('rimraf')
-const SecretStack = require('secret-stack')
-const caps = require('ssb-caps')
-const p = require('util').promisify
+const p = require('node:util').promisify
+const Keypair = require('ppppp-keypair')
 const Algorithm = require('../lib/algorithm')
-const { generateKeypair } = require('./util')
+const { createPeer } = require('./util')
 
-const createPeer = SecretStack({ appKey: caps.shs })
-  .use(require('ppppp-db'))
-  .use(require('ssb-box'))
-  .use(require('../lib'))
-
-const ALICE_DIR = path.join(os.tmpdir(), 'dagsync-alice')
-const BOB_DIR = path.join(os.tmpdir(), 'dagsync-bob')
-const aliceKeys = generateKeypair('alice')
-const bobKeys = generateKeypair('bob')
+const carolKeypair = Keypair.generate('ed25519', 'carol')
 
 test('sync a feed with goal=all', async (t) => {
-  rimraf.sync(ALICE_DIR)
-  rimraf.sync(BOB_DIR)
-
-  const alice = createPeer({
-    keys: aliceKeys,
-    path: ALICE_DIR,
-  })
-
-  const bob = createPeer({
-    keys: bobKeys,
-    path: BOB_DIR,
-  })
+  const alice = createPeer({ name: 'alice' })
+  const bob = createPeer({ name: 'bob' })
 
   await alice.db.loaded()
-  const aliceGroupRec0 = await p(alice.db.group.create)({ _nonce: 'alice' })
-  const aliceId = aliceGroupRec0.hash
-  await p(alice.db.add)(aliceGroupRec0.msg, aliceId)
-
   await bob.db.loaded()
-  const bobGroupRec0 = await p(bob.db.group.create)({ _nonce: 'bob' })
-  const bobId = bobGroupRec0.hash
-  await p(bob.db.add)(bobGroupRec0.msg, bobId)
 
-  const carolKeys = generateKeypair('carol')
-  const carolGroupRec0 = await p(alice.db.group.create)({
-    keys: carolKeys,
+  const carolID = await p(alice.db.identity.create)({
+    keypair: carolKeypair,
+    domain: 'account',
     _nonce: 'carol',
   })
-  const carolId = carolGroupRec0.hash
+  const carolIDMsg = alice.db.get(carolID)
 
-  // Bob knows Alice
-  await p(bob.db.add)(carolGroupRec0.msg, carolId)
+  // Bob knows Carol
+  await p(bob.db.add)(carolIDMsg, carolID)
 
   const carolMsgs = []
   for (let i = 1; i <= 10; i++) {
     const rec = await p(alice.db.feed.publish)({
-      group: carolId,
-      type: 'post',
+      identity: carolID,
+      domain: 'post',
       data: { text: 'm' + i },
-      keys: carolKeys,
+      keypair: carolKeypair,
     })
     carolMsgs.push(rec.msg)
   }
   t.pass('alice has msgs 1..10 from carol')
 
-  const carolPostsRootHash = alice.db.feed.getId(carolId, 'post')
+  const carolPostsRootHash = alice.db.feed.getId(carolID, 'post')
   const carolPostsRootMsg = alice.db.get(carolPostsRootHash)
 
   await p(bob.db.add)(carolPostsRootMsg, carolPostsRootHash)
@@ -74,7 +45,7 @@ test('sync a feed with goal=all', async (t) => {
 
   {
     const arr = [...bob.db.msgs()]
-      .filter((msg) => msg.metadata.group === carolId && msg.data)
+      .filter((msg) => msg.metadata.identity === carolID && msg.data)
       .map((msg) => msg.data.text)
     t.deepEquals(
       arr,
@@ -95,7 +66,7 @@ test('sync a feed with goal=all', async (t) => {
 
   {
     const arr = [...bob.db.msgs()]
-      .filter((msg) => msg.metadata.group === carolId && msg.data)
+      .filter((msg) => msg.metadata.identity === carolID && msg.data)
       .map((msg) => msg.data.text)
     t.deepEquals(
       arr,
@@ -110,52 +81,35 @@ test('sync a feed with goal=all', async (t) => {
 })
 
 test('sync a feed with goal=newest', async (t) => {
-  rimraf.sync(ALICE_DIR)
-  rimraf.sync(BOB_DIR)
-
-  const alice = createPeer({
-    keys: aliceKeys,
-    path: ALICE_DIR,
-  })
-
-  const bob = createPeer({
-    keys: bobKeys,
-    path: BOB_DIR,
-  })
+  const alice = createPeer({ name: 'alice' })
+  const bob = createPeer({ name: 'bob' })
 
   await alice.db.loaded()
-  const aliceGroupRec0 = await p(alice.db.group.create)({ _nonce: 'alice' })
-  const aliceId = aliceGroupRec0.hash
-  await p(alice.db.add)(aliceGroupRec0.msg, aliceId)
-
   await bob.db.loaded()
-  const bobGroupRec0 = await p(bob.db.group.create)({ _nonce: 'bob' })
-  const bobId = bobGroupRec0.hash
-  await p(bob.db.add)(bobGroupRec0.msg, bobId)
 
-  const carolKeys = generateKeypair('carol')
-  const carolGroupRec0 = await p(alice.db.group.create)({
-    keys: carolKeys,
+  const carolID = await p(alice.db.identity.create)({
+    keypair: carolKeypair,
+    domain: 'account',
     _nonce: 'carol',
   })
-  const carolId = carolGroupRec0.hash
+  const carolIDMsg = alice.db.get(carolID)
 
-  // Bob knows Alice
-  await p(bob.db.add)(carolGroupRec0.msg, carolId)
+  // Bob knows Carol
+  await p(bob.db.add)(carolIDMsg, carolID)
 
   const carolMsgs = []
   for (let i = 1; i <= 10; i++) {
     const rec = await p(alice.db.feed.publish)({
-      group: carolId,
-      type: 'post',
+      identity: carolID,
+      domain: 'post',
       data: { text: 'm' + i },
-      keys: carolKeys,
+      keypair: carolKeypair,
     })
     carolMsgs.push(rec.msg)
   }
   t.pass('alice has msgs 1..10 from carol')
 
-  const carolPostsRootHash = alice.db.feed.getId(carolId, 'post')
+  const carolPostsRootHash = alice.db.feed.getId(carolID, 'post')
   const carolPostsRootMsg = alice.db.get(carolPostsRootHash)
 
   await p(bob.db.add)(carolPostsRootMsg, carolPostsRootHash)
@@ -165,7 +119,7 @@ test('sync a feed with goal=newest', async (t) => {
 
   {
     const arr = [...bob.db.msgs()]
-      .filter((msg) => msg.metadata.group === carolId && msg.data)
+      .filter((msg) => msg.metadata.identity === carolID && msg.data)
       .map((msg) => msg.data.text)
     t.deepEquals(
       arr,
@@ -186,7 +140,7 @@ test('sync a feed with goal=newest', async (t) => {
 
   {
     const arr = [...bob.db.msgs()]
-      .filter((msg) => msg.metadata.group === carolId && msg.data)
+      .filter((msg) => msg.metadata.identity === carolID && msg.data)
       .map((msg) => msg.data.text)
     t.deepEquals(
       arr,
@@ -201,58 +155,41 @@ test('sync a feed with goal=newest', async (t) => {
 })
 
 test('sync a feed with goal=newest but too far behind', async (t) => {
-  rimraf.sync(ALICE_DIR)
-  rimraf.sync(BOB_DIR)
-
-  const alice = createPeer({
-    keys: aliceKeys,
-    path: ALICE_DIR,
-  })
-
-  const bob = createPeer({
-    keys: bobKeys,
-    path: BOB_DIR,
-  })
+  const alice = createPeer({ name: 'alice' })
+  const bob = createPeer({ name: 'bob' })
 
   await alice.db.loaded()
-  const aliceGroupRec0 = await p(alice.db.group.create)({ _nonce: 'alice' })
-  const aliceId = aliceGroupRec0.hash
-  await p(alice.db.add)(aliceGroupRec0.msg, aliceId)
-
   await bob.db.loaded()
-  const bobGroupRec0 = await p(bob.db.group.create)({ _nonce: 'bob' })
-  const bobId = bobGroupRec0.hash
-  await p(bob.db.add)(bobGroupRec0.msg, bobId)
 
-  const carolKeys = generateKeypair('carol')
-  const carolGroupRec0 = await p(alice.db.group.create)({
-    keys: carolKeys,
+  const carolID = await p(alice.db.identity.create)({
+    keypair: carolKeypair,
+    domain: 'account',
     _nonce: 'carol',
   })
-  const carolId = carolGroupRec0.hash
+  const carolIDMsg = alice.db.get(carolID)
 
-  // Bob knows Alice
-  await p(bob.db.add)(carolGroupRec0.msg, carolId)
+  // Bob knows Carol
+  await p(bob.db.add)(carolIDMsg, carolID)
 
   const carolMsgs = []
   for (let i = 1; i <= 10; i++) {
     const rec = await p(alice.db.feed.publish)({
-      group: carolId,
-      type: 'post',
+      identity: carolID,
+      domain: 'post',
       data: { text: 'm' + i },
-      keys: carolKeys,
+      keypair: carolKeypair,
     })
     carolMsgs.push(rec.msg)
   }
 
-  const carolPostsRootHash = alice.db.feed.getId(carolId, 'post')
+  const carolPostsRootHash = alice.db.feed.getId(carolID, 'post')
   const carolPostsRootMsg = alice.db.get(carolPostsRootHash)
 
   const algo = new Algorithm(alice)
   await algo.pruneNewest(carolPostsRootHash, 5)
   {
     const arr = [...alice.db.msgs()]
-      .filter((msg) => msg.metadata.group === carolId && msg.data)
+      .filter((msg) => msg.metadata.identity === carolID && msg.data)
       .map((msg) => msg.data.text)
     t.deepEquals(
       arr,
@@ -268,7 +205,7 @@ test('sync a feed with goal=newest but too far behind', async (t) => {
 
   {
     const arr = [...bob.db.msgs()]
-      .filter((msg) => msg.metadata.group === carolId && msg.data)
+      .filter((msg) => msg.metadata.identity === carolID && msg.data)
       .map((msg) => msg.data.text)
     t.deepEquals(arr, ['m1', 'm2'], 'bob has msgs 1..2 from carol')
   }
@@ -285,7 +222,7 @@ test('sync a feed with goal=newest but too far behind', async (t) => {
 
   {
     const arr = [...bob.db.msgs()]
-      .filter((msg) => msg.metadata.group === carolId && msg.data)
+      .filter((msg) => msg.metadata.identity === carolID && msg.data)
       .map((msg) => msg.data.text)
     t.deepEquals(
       arr,

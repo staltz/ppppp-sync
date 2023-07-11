@@ -1,26 +1,13 @@
 const test = require('tape')
-const path = require('path')
-const os = require('os')
-const rimraf = require('rimraf')
-const SecretStack = require('secret-stack')
-const caps = require('ssb-caps')
 const p = require('util').promisify
-const { generateKeypair } = require('./util')
+const Keypair = require('ppppp-keypair')
+const { createPeer } = require('./util')
 
-const createSSB = SecretStack({ appKey: caps.shs })
-  .use(require('ppppp-db'))
-  .use(require('ssb-box'))
-  .use(require('../lib'))
-
-const ALICE_DIR = path.join(os.tmpdir(), 'dagsync-alice')
-const BOB_DIR = path.join(os.tmpdir(), 'dagsync-bob')
-const aliceKeys = generateKeypair('alice')
-const bobKeys = generateKeypair('bob')
+const carolKeypair = Keypair.generate('ed25519', 'carol')
+const daveKeypair = Keypair.generate('ed25519', 'dave')
 
 function getTexts(iter) {
-  return [...iter]
-    .filter((msg) => msg.metadata.group && msg.data)
-    .map((msg) => msg.data.text)
+  return [...iter].filter((msg) => msg.data?.text).map((msg) => msg.data.text)
 }
 
 /*
@@ -61,81 +48,72 @@ graph TB;
 ```
 */
 test('sync a thread where both peers have portions', async (t) => {
-  rimraf.sync(ALICE_DIR)
-  rimraf.sync(BOB_DIR)
-
-  const alice = createSSB({
-    keys: aliceKeys,
-    path: ALICE_DIR,
-  })
-
-  const bob = createSSB({
-    keys: bobKeys,
-    path: BOB_DIR,
-  })
+  const alice = createPeer({ name: 'alice' })
+  const bob = createPeer({ name: 'bob' })
 
   await alice.db.loaded()
-  const aliceGroupRec0 = await p(alice.db.group.create)({ _nonce: 'alice' })
-  const aliceId = aliceGroupRec0.hash
-  await p(alice.db.add)(aliceGroupRec0.msg, aliceId)
+  const aliceID = await p(alice.db.identity.create)({
+    domain: 'account',
+    _nonce: 'alice',
+  })
+  const aliceIDMsg = alice.db.get(aliceID)
 
   await bob.db.loaded()
-  const bobGroupRec0 = await p(bob.db.group.create)({ _nonce: 'bob' })
-  const bobId = bobGroupRec0.hash
-  await p(bob.db.add)(bobGroupRec0.msg, bobId)
+  const bobID = await p(bob.db.identity.create)({
+    domain: 'account',
+    _nonce: 'bob',
+  })
+  const bobIDMsg = bob.db.get(bobID)
 
   // Alice created Carol
-  const carolKeys = generateKeypair('carol')
-  const carolGroupRec0 = await p(alice.db.group.create)({
-    keys: carolKeys,
+  const carolID = await p(alice.db.identity.create)({
+    domain: 'account',
+    keypair: carolKeypair,
     _nonce: 'carol',
   })
-  const carolId = carolGroupRec0.hash
+  const carolIDMsg = alice.db.get(carolID)
 
   // Alice created Dave
-  const daveKeys = generateKeypair('dave')
-  const daveGroupRec0 = await p(alice.db.group.create)({
-    keys: daveKeys,
+  const daveID = await p(alice.db.identity.create)({
+    domain: 'account',
+    keypair: daveKeypair,
     _nonce: 'dave',
   })
-  const daveId = daveGroupRec0.hash
+  const daveIDMsg = alice.db.get(daveID)
 
   // Alice knows Bob
-  await p(alice.db.add)(bobGroupRec0.msg, bobId)
+  await p(alice.db.add)(bobIDMsg, bobID)
 
   // Bob knows Alice, Carol, and Dave
-  await p(bob.db.add)(aliceGroupRec0.msg, aliceId)
-  await p(bob.db.add)(carolGroupRec0.msg, carolId)
-  await p(bob.db.add)(daveGroupRec0.msg, daveId)
+  await p(bob.db.add)(aliceIDMsg, aliceID)
+  await p(bob.db.add)(carolIDMsg, carolID)
+  await p(bob.db.add)(daveIDMsg, daveID)
 
   const startA = await p(alice.db.feed.publish)({
-    group: aliceId,
-    type: 'post',
+    identity: aliceID,
+    domain: 'post',
     data: { text: 'A' },
-    keys: aliceKeys,
   })
-  const rootHashA = alice.db.feed.getId(aliceId, 'post')
+  const rootHashA = alice.db.feed.getId(aliceID, 'post')
   const rootMsgA = alice.db.get(rootHashA)
 
   await p(bob.db.add)(rootMsgA, rootHashA)
   await p(bob.db.add)(startA.msg, rootHashA)
 
   const replyB1 = await p(bob.db.feed.publish)({
-    group: bobId,
-    type: 'post',
+    identity: bobID,
+    domain: 'post',
     data: { text: 'B1' },
     tangles: [startA.hash],
-    keys: bobKeys,
   })
 
   const replyB2 = await p(bob.db.feed.publish)({
-    group: bobId,
-    type: 'post',
+    identity: bobID,
+    domain: 'post',
     data: { text: 'B2' },
     tangles: [startA.hash],
-    keys: bobKeys,
   })
-  const rootHashB = bob.db.feed.getId(bobId, 'post')
+  const rootHashB = bob.db.feed.getId(bobID, 'post')
   const rootMsgB = bob.db.get(rootHashB)
 
   await p(alice.db.add)(rootMsgB, rootHashB)
@@ -143,19 +121,19 @@ test('sync a thread where both peers have portions', async (t) => {
   await p(alice.db.add)(replyB2.msg, rootHashB)
 
   const replyC1 = await p(alice.db.feed.publish)({
-    group: carolId,
-    type: 'post',
+    identity: carolID,
+    domain: 'post',
     data: { text: 'C1' },
     tangles: [startA.hash],
-    keys: carolKeys,
+    keypair: carolKeypair,
   })
 
   const replyD1 = await p(bob.db.feed.publish)({
-    group: daveId,
-    type: 'post',
+    identity: daveID,
+    domain: 'post',
     data: { text: 'D1' },
     tangles: [startA.hash],
-    keys: daveKeys,
+    keypair: daveKeypair,
   })
 
   t.deepEquals(
@@ -198,56 +176,47 @@ test('sync a thread where both peers have portions', async (t) => {
 })
 
 test('sync a thread where initiator does not have the root', async (t) => {
-  rimraf.sync(ALICE_DIR)
-  rimraf.sync(BOB_DIR)
-
-  const alice = createSSB({
-    keys: aliceKeys,
-    path: ALICE_DIR,
-  })
-
-  const bob = createSSB({
-    keys: bobKeys,
-    path: BOB_DIR,
-  })
+  const alice = createPeer({ name: 'alice' })
+  const bob = createPeer({ name: 'bob' })
 
   await alice.db.loaded()
-  const aliceGroupRec0 = await p(alice.db.group.create)({ _nonce: 'alice' })
-  const aliceId = aliceGroupRec0.hash
-  await p(alice.db.add)(aliceGroupRec0.msg, aliceId)
+  const aliceID = await p(alice.db.identity.create)({
+    domain: 'account',
+    _nonce: 'alice',
+  })
+  const aliceIDMsg = alice.db.get(aliceID)
 
   await bob.db.loaded()
-  const bobGroupRec0 = await p(bob.db.group.create)({ _nonce: 'bob' })
-  const bobId = bobGroupRec0.hash
-  await p(bob.db.add)(bobGroupRec0.msg, bobId)
+  const bobID = await p(bob.db.identity.create)({
+    domain: 'account',
+    _nonce: 'bob',
+  })
+  const bobIDMsg = bob.db.get(bobID)
 
   // Alice knows Bob
-  await p(alice.db.add)(bobGroupRec0.msg, bobId)
+  await p(alice.db.add)(bobIDMsg, bobID)
 
   // Bob knows Alice
-  await p(bob.db.add)(aliceGroupRec0.msg, aliceId)
+  await p(bob.db.add)(aliceIDMsg, aliceID)
 
   const rootA = await p(alice.db.feed.publish)({
-    group: aliceId,
-    type: 'post',
+    identity: aliceID,
+    domain: 'post',
     data: { text: 'A' },
-    keys: aliceKeys,
   })
 
   const replyA1 = await p(alice.db.feed.publish)({
-    group: aliceId,
-    type: 'post',
+    identity: aliceID,
+    domain: 'post',
     data: { text: 'A1' },
     tangles: [rootA.hash],
-    keys: aliceKeys,
   })
 
   const replyA2 = await p(alice.db.feed.publish)({
-    group: aliceId,
-    type: 'post',
+    identity: aliceID,
+    domain: 'post',
     data: { text: 'A2' },
     tangles: [rootA.hash],
-    keys: aliceKeys,
   })
 
   t.deepEquals(
@@ -281,56 +250,47 @@ test('sync a thread where initiator does not have the root', async (t) => {
 })
 
 test('sync a thread where receiver does not have the root', async (t) => {
-  rimraf.sync(ALICE_DIR)
-  rimraf.sync(BOB_DIR)
-
-  const alice = createSSB({
-    keys: aliceKeys,
-    path: ALICE_DIR,
-  })
-
-  const bob = createSSB({
-    keys: bobKeys,
-    path: BOB_DIR,
-  })
+  const alice = createPeer({ name: 'alice' })
+  const bob = createPeer({ name: 'bob' })
 
   await alice.db.loaded()
-  const aliceGroupRec0 = await p(alice.db.group.create)({ _nonce: 'alice' })
-  const aliceId = aliceGroupRec0.hash
-  await p(alice.db.add)(aliceGroupRec0.msg, aliceId)
+  const aliceID = await p(alice.db.identity.create)({
+    domain: 'account',
+    _nonce: 'alice',
+  })
+  const aliceIDMsg = alice.db.get(aliceID)
 
   await bob.db.loaded()
-  const bobGroupRec0 = await p(bob.db.group.create)({ _nonce: 'bob' })
-  const bobId = bobGroupRec0.hash
-  await p(bob.db.add)(bobGroupRec0.msg, bobId)
+  const bobID = await p(bob.db.identity.create)({
+    domain: 'account',
+    _nonce: 'bob',
+  })
+  const bobIDMsg = bob.db.get(bobID)
 
   // Alice knows Bob
-  await p(alice.db.add)(bobGroupRec0.msg, bobId)
+  await p(alice.db.add)(bobIDMsg, bobID)
 
   // Bob knows Alice
-  await p(bob.db.add)(aliceGroupRec0.msg, aliceId)
+  await p(bob.db.add)(aliceIDMsg, aliceID)
 
   const rootA = await p(alice.db.feed.publish)({
-    group: aliceId,
-    type: 'post',
+    identity: aliceID,
+    domain: 'post',
     data: { text: 'A' },
-    keys: aliceKeys,
   })
 
   const replyA1 = await p(alice.db.feed.publish)({
-    group: aliceId,
-    type: 'post',
+    identity: aliceID,
+    domain: 'post',
     data: { text: 'A1' },
     tangles: [rootA.hash],
-    keys: aliceKeys,
   })
 
   const replyA2 = await p(alice.db.feed.publish)({
-    group: aliceId,
-    type: 'post',
+    identity: aliceID,
+    domain: 'post',
     data: { text: 'A2' },
     tangles: [rootA.hash],
-    keys: aliceKeys,
   })
 
   t.deepEquals(
@@ -363,64 +323,54 @@ test('sync a thread where receiver does not have the root', async (t) => {
 })
 
 test('sync a thread with reactions too', async (t) => {
-  rimraf.sync(ALICE_DIR)
-  rimraf.sync(BOB_DIR)
-
-  const alice = createSSB({
-    keys: aliceKeys,
-    path: ALICE_DIR,
-  })
-
-  const bob = createSSB({
-    keys: bobKeys,
-    path: BOB_DIR,
-  })
+  const alice = createPeer({ name: 'alice' })
+  const bob = createPeer({ name: 'bob' })
 
   await alice.db.loaded()
-  const aliceGroupRec0 = await p(alice.db.group.create)({ _nonce: 'alice' })
-  const aliceId = aliceGroupRec0.hash
-  await p(alice.db.add)(aliceGroupRec0.msg, aliceId)
+  const aliceID = await p(alice.db.identity.create)({
+    domain: 'account',
+    _nonce: 'alice',
+  })
+  const aliceIDMsg = alice.db.get(aliceID)
 
   await bob.db.loaded()
-  const bobGroupRec0 = await p(bob.db.group.create)({ _nonce: 'bob' })
-  const bobId = bobGroupRec0.hash
-  await p(bob.db.add)(bobGroupRec0.msg, bobId)
+  const bobID = await p(bob.db.identity.create)({
+    domain: 'account',
+    _nonce: 'bob',
+  })
+  const bobIDMsg = bob.db.get(bobID)
 
   // Alice knows Bob
-  await p(alice.db.add)(bobGroupRec0.msg, bobId)
+  await p(alice.db.add)(bobIDMsg, bobID)
 
   // Bob knows Alice
-  await p(bob.db.add)(aliceGroupRec0.msg, aliceId)
+  await p(bob.db.add)(aliceIDMsg, aliceID)
 
   const rootA = await p(alice.db.feed.publish)({
-    group: aliceId,
-    type: 'post',
+    identity: aliceID,
+    domain: 'post',
     data: { text: 'A' },
-    keys: aliceKeys,
   })
 
   const replyA1 = await p(alice.db.feed.publish)({
-    group: aliceId,
-    type: 'post',
+    identity: aliceID,
+    domain: 'post',
     data: { text: 'A1' },
     tangles: [rootA.hash],
-    keys: aliceKeys,
   })
 
   const replyA2 = await p(alice.db.feed.publish)({
-    group: aliceId,
-    type: 'post',
+    identity: aliceID,
+    domain: 'post',
     data: { text: 'A2' },
     tangles: [rootA.hash],
-    keys: aliceKeys,
   })
 
   const reactionA3 = await p(alice.db.feed.publish)({
-    group: aliceId,
-    type: 'reaction',
+    identity: aliceID,
+    domain: 'reaction',
     data: { text: 'yes', link: replyA1.hash },
     tangles: [rootA.hash, replyA1.hash],
-    keys: aliceKeys,
   })
 
   t.deepEquals(
