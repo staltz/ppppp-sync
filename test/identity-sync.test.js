@@ -1,4 +1,5 @@
-const test = require('tape')
+const test = require('node:test')
+const assert = require('node:assert')
 const p = require('util').promisify
 const Keypair = require('ppppp-keypair')
 const { createPeer } = require('./util')
@@ -38,13 +39,13 @@ test('sync an identity tangle', async (t) => {
     keypair: aliceKeypair2,
   })
 
-  t.deepEquals(
+  assert.deepEqual(
     getIdentity(alice.db.msgs()),
     [aliceKeypair.public, aliceKeypair1.public, aliceKeypair2.public],
     'alice has her identity tangle'
   )
 
-  t.deepEquals(
+  assert.deepEqual(
     getIdentity(bob.db.msgs()),
     [],
     "bob doesn't have alice's identity tangle"
@@ -54,13 +55,13 @@ test('sync an identity tangle', async (t) => {
   alice.tangleSync.setGoal(aliceID, 'all')
 
   const remoteAlice = await p(bob.connect)(alice.getAddress())
-  t.pass('bob connected to alice')
+  assert('bob connected to alice')
 
   bob.tangleSync.initiate()
   await p(setTimeout)(1000)
-  t.pass('tangleSync!')
+  assert('tangleSync!')
 
-  t.deepEquals(
+  assert.deepEqual(
     getIdentity(bob.db.msgs()),
     [aliceKeypair.public, aliceKeypair1.public, aliceKeypair2.public],
     "bob has alice's identity tangle"

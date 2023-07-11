@@ -1,4 +1,5 @@
-const test = require('tape')
+const test = require('node:test')
+const assert = require('node:assert')
 const p = require('util').promisify
 const Keypair = require('ppppp-keypair')
 const { createPeer } = require('./util')
@@ -136,13 +137,13 @@ test('sync a thread where both peers have portions', async (t) => {
     keypair: daveKeypair,
   })
 
-  t.deepEquals(
+  assert.deepEqual(
     getTexts(alice.db.msgs()),
     ['A', 'B1', 'B2', 'C1'],
     'alice has a portion of the thread'
   )
 
-  t.deepEquals(
+  assert.deepEqual(
     getTexts(bob.db.msgs()),
     ['A', 'B1', 'B2', 'D1'],
     'bob has another portion of the thread'
@@ -152,19 +153,19 @@ test('sync a thread where both peers have portions', async (t) => {
   alice.tangleSync.setGoal(startA.hash, 'all')
 
   const remoteAlice = await p(bob.connect)(alice.getAddress())
-  t.pass('bob connected to alice')
+  assert('bob connected to alice')
 
   bob.tangleSync.initiate()
   await p(setTimeout)(1000)
-  t.pass('tangleSync!')
+  assert('tangleSync!')
 
-  t.deepEquals(
+  assert.deepEqual(
     getTexts(alice.db.msgs()),
     ['A', 'B1', 'B2', 'C1', 'D1'],
     'alice has the full thread'
   )
 
-  t.deepEquals(
+  assert.deepEqual(
     getTexts(bob.db.msgs()),
     ['A', 'B1', 'B2', 'D1', 'C1'],
     'bob has the full thread'
@@ -219,26 +220,26 @@ test('sync a thread where initiator does not have the root', async (t) => {
     tangles: [rootA.hash],
   })
 
-  t.deepEquals(
+  assert.deepEqual(
     getTexts(alice.db.msgs()),
     ['A', 'A1', 'A2'],
     'alice has the full thread'
   )
 
-  t.deepEquals(getTexts(bob.db.msgs()), [], 'bob has nothing')
+  assert.deepEqual(getTexts(bob.db.msgs()), [], 'bob has nothing')
 
   bob.tangleSync.setGoal(rootA.hash, 'all')
   // ON PURPOSE: alice does not set the goal
   // alice.tangleSync.setGoal(rootA.hash, 'all')
 
   const remoteAlice = await p(bob.connect)(alice.getAddress())
-  t.pass('bob connected to alice')
+  assert('bob connected to alice')
 
   bob.tangleSync.initiate()
   await p(setTimeout)(1000)
-  t.pass('tangleSync!')
+  assert('tangleSync!')
 
-  t.deepEquals(
+  assert.deepEqual(
     getTexts(bob.db.msgs()),
     ['A', 'A1', 'A2'],
     'bob has the full thread'
@@ -293,25 +294,25 @@ test('sync a thread where receiver does not have the root', async (t) => {
     tangles: [rootA.hash],
   })
 
-  t.deepEquals(
+  assert.deepEqual(
     getTexts(alice.db.msgs()),
     ['A', 'A1', 'A2'],
     'alice has the full thread'
   )
 
-  t.deepEquals(getTexts(bob.db.msgs()), [], 'bob has nothing')
+  assert.deepEqual(getTexts(bob.db.msgs()), [], 'bob has nothing')
 
   bob.tangleSync.setGoal(rootA.hash, 'all')
   alice.tangleSync.setGoal(rootA.hash, 'all')
 
   const remoteBob = await p(alice.connect)(bob.getAddress())
-  t.pass('alice connected to bob')
+  assert('alice connected to bob')
 
   alice.tangleSync.initiate()
   await p(setTimeout)(1000)
-  t.pass('tangleSync!')
+  assert('tangleSync!')
 
-  t.deepEquals(
+  assert.deepEqual(
     getTexts(bob.db.msgs()),
     ['A', 'A1', 'A2'],
     'bob has the full thread'
@@ -373,25 +374,25 @@ test('sync a thread with reactions too', async (t) => {
     tangles: [rootA.hash, replyA1.hash],
   })
 
-  t.deepEquals(
+  assert.deepEqual(
     getTexts(alice.db.msgs()),
     ['A', 'A1', 'A2', 'yes'],
     'alice has the full thread'
   )
 
-  t.deepEquals(getTexts(bob.db.msgs()), [], 'bob has nothing')
+  assert.deepEqual(getTexts(bob.db.msgs()), [], 'bob has nothing')
 
   bob.tangleSync.setGoal(rootA.hash, 'all')
   alice.tangleSync.setGoal(rootA.hash, 'all')
 
   const remoteBob = await p(alice.connect)(bob.getAddress())
-  t.pass('alice connected to bob')
+  assert('alice connected to bob')
 
   alice.tangleSync.initiate()
   await p(setTimeout)(1000)
-  t.pass('tangleSync!')
+  assert('tangleSync!')
 
-  t.deepEquals(
+  assert.deepEqual(
     getTexts(bob.db.msgs()),
     ['A', 'A1', 'A2', 'yes'],
     'bob has the full thread'

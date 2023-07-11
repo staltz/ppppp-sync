@@ -1,4 +1,5 @@
-const test = require('tape')
+const test = require('node:test')
+const assert = require('node:assert')
 const p = require('node:util').promisify
 const Keypair = require('ppppp-keypair')
 const Algorithm = require('../lib/algorithm')
@@ -33,7 +34,7 @@ test('sync a feed with goal=all', async (t) => {
     })
     carolMsgs.push(rec.msg)
   }
-  t.pass('alice has msgs 1..10 from carol')
+  assert('alice has msgs 1..10 from carol')
 
   const carolPostsRootHash = alice.db.feed.getId(carolID, 'post')
   const carolPostsRootMsg = alice.db.get(carolPostsRootHash)
@@ -47,7 +48,7 @@ test('sync a feed with goal=all', async (t) => {
     const arr = [...bob.db.msgs()]
       .filter((msg) => msg.metadata.identity === carolID && msg.data)
       .map((msg) => msg.data.text)
-    t.deepEquals(
+    assert.deepEqual(
       arr,
       ['m1', 'm2', 'm3', 'm4', 'm5', 'm6', 'm7'],
       'bob has msgs 1..7 from carol'
@@ -58,17 +59,17 @@ test('sync a feed with goal=all', async (t) => {
   alice.tangleSync.setGoal(carolPostsRootHash, 'all')
 
   const remoteAlice = await p(bob.connect)(alice.getAddress())
-  t.pass('bob connected to alice')
+  assert('bob connected to alice')
 
   bob.tangleSync.initiate()
   await p(setTimeout)(1000)
-  t.pass('tangleSync!')
+  assert('tangleSync!')
 
   {
     const arr = [...bob.db.msgs()]
       .filter((msg) => msg.metadata.identity === carolID && msg.data)
       .map((msg) => msg.data.text)
-    t.deepEquals(
+    assert.deepEqual(
       arr,
       ['m1', 'm2', 'm3', 'm4', 'm5', 'm6', 'm7', 'm8', 'm9', 'm10'],
       'bob has msgs 1..10 from carol'
@@ -107,7 +108,7 @@ test('sync a feed with goal=newest', async (t) => {
     })
     carolMsgs.push(rec.msg)
   }
-  t.pass('alice has msgs 1..10 from carol')
+  assert('alice has msgs 1..10 from carol')
 
   const carolPostsRootHash = alice.db.feed.getId(carolID, 'post')
   const carolPostsRootMsg = alice.db.get(carolPostsRootHash)
@@ -121,7 +122,7 @@ test('sync a feed with goal=newest', async (t) => {
     const arr = [...bob.db.msgs()]
       .filter((msg) => msg.metadata.identity === carolID && msg.data)
       .map((msg) => msg.data.text)
-    t.deepEquals(
+    assert.deepEqual(
       arr,
       ['m1', 'm2', 'm3', 'm4', 'm5', 'm6', 'm7'],
       'bob has msgs 1..7 from carol'
@@ -132,17 +133,17 @@ test('sync a feed with goal=newest', async (t) => {
   alice.tangleSync.setGoal(carolPostsRootHash, 'all')
 
   const remoteAlice = await p(bob.connect)(alice.getAddress())
-  t.pass('bob connected to alice')
+  assert('bob connected to alice')
 
   bob.tangleSync.initiate()
   await p(setTimeout)(1000)
-  t.pass('tangleSync!')
+  assert('tangleSync!')
 
   {
     const arr = [...bob.db.msgs()]
       .filter((msg) => msg.metadata.identity === carolID && msg.data)
       .map((msg) => msg.data.text)
-    t.deepEquals(
+    assert.deepEqual(
       arr,
       ['m6', 'm7', 'm8', 'm9', 'm10'],
       'bob has msgs 6..10 from carol'
@@ -191,7 +192,7 @@ test('sync a feed with goal=newest but too far behind', async (t) => {
     const arr = [...alice.db.msgs()]
       .filter((msg) => msg.metadata.identity === carolID && msg.data)
       .map((msg) => msg.data.text)
-    t.deepEquals(
+    assert.deepEqual(
       arr,
       ['m6', 'm7', 'm8', 'm9', 'm10'],
       'alice has msgs 6..10 from carol'
@@ -207,24 +208,24 @@ test('sync a feed with goal=newest but too far behind', async (t) => {
     const arr = [...bob.db.msgs()]
       .filter((msg) => msg.metadata.identity === carolID && msg.data)
       .map((msg) => msg.data.text)
-    t.deepEquals(arr, ['m1', 'm2'], 'bob has msgs 1..2 from carol')
+    assert.deepEqual(arr, ['m1', 'm2'], 'bob has msgs 1..2 from carol')
   }
 
   alice.tangleSync.setGoal(carolPostsRootHash, 'newest-5')
   bob.tangleSync.setGoal(carolPostsRootHash, 'newest-5')
 
   const remoteAlice = await p(bob.connect)(alice.getAddress())
-  t.pass('bob connected to alice')
+  assert('bob connected to alice')
 
   bob.tangleSync.initiate()
   await p(setTimeout)(1000)
-  t.pass('tangleSync!')
+  assert('tangleSync!')
 
   {
     const arr = [...bob.db.msgs()]
       .filter((msg) => msg.metadata.identity === carolID && msg.data)
       .map((msg) => msg.data.text)
-    t.deepEquals(
+    assert.deepEqual(
       arr,
       ['m6', 'm7', 'm8', 'm9', 'm10'],
       'bob has msgs 6..10 from carol'
