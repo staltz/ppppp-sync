@@ -14,9 +14,8 @@ function createPeer(opts) {
   if (!opts.keypair) throw new Error('need opts.keypair in createPeer()')
 
   rimraf.sync(opts.path)
-  return require('secret-stack/lib/api')([], {})
-    .use(require('secret-stack/lib/core'))
-    .use(require('secret-stack/lib/plugins/net'))
+  return require('secret-stack/bare')()
+    .use(require('secret-stack/plugins/net'))
     .use(require('secret-handshake-ext/secret-stack'))
     .use(require('ppppp-db'))
     .use(require('ssb-box'))
