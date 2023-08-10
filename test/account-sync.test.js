@@ -7,48 +7,48 @@ const { createPeer } = require('./util')
 const aliceKeypair = Keypair.generate('ed25519', 'alice')
 const bobKeys = Keypair.generate('ed25519', 'bob')
 
-function getIdentity(iter) {
+function getAccount(iter) {
   return [...iter]
-    .filter((msg) => msg.metadata.identity === 'self' && msg.data)
-    .map((msg) => msg.data.add)
+    .filter((msg) => msg.metadata.account === 'self' && msg.data)
+    .map((msg) => msg.data.add.key.bytes)
 }
 
-test('sync an identity tangle', async (t) => {
+test('sync an account tangle', async (t) => {
   const alice = createPeer({ name: 'alice', keypair: aliceKeypair })
   const bob = createPeer({ name: 'bob', keypair: bobKeys })
 
   await alice.db.loaded()
   await bob.db.loaded()
 
-  // Alice's identity tangle
+  // Alice's account tangle
   await alice.db.loaded()
-  const aliceID = await p(alice.db.identity.create)({
+  const aliceID = await p(alice.db.account.create)({
     domain: 'account',
     _nonce: 'alice',
   })
 
   const aliceKeypair1 = Keypair.generate('ed25519', 'alice1')
-  await p(alice.db.identity.add)({
-    identity: aliceID,
+  await p(alice.db.account.add)({
+    account: aliceID,
     keypair: aliceKeypair1,
   })
 
   const aliceKeypair2 = Keypair.generate('ed25519', 'alice2')
-  await p(alice.db.identity.add)({
-    identity: aliceID,
+  await p(alice.db.account.add)({
+    account: aliceID,
     keypair: aliceKeypair2,
   })
 
   assert.deepEqual(
-    getIdentity(alice.db.msgs()),
+    getAccount(alice.db.msgs()),
     [aliceKeypair.public, aliceKeypair1.public, aliceKeypair2.public],
-    'alice has her identity tangle'
+    'alice has her account tangle'
   )
 
   assert.deepEqual(
-    getIdentity(bob.db.msgs()),
+    getAccount(bob.db.msgs()),
     [],
-    "bob doesn't have alice's identity tangle"
+    "bob doesn't have alice's account tangle"
   )
 
   bob.tangleSync.setGoal(aliceID, 'all')
@@ -62,9 +62,9 @@ test('sync an identity tangle', async (t) => {
   assert('tangleSync!')
 
   assert.deepEqual(
-    getIdentity(bob.db.msgs()),
+    getAccount(bob.db.msgs()),
     [aliceKeypair.public, aliceKeypair1.public, aliceKeypair2.public],
-    "bob has alice's identity tangle"
+    "bob has alice's account tangle"
   )
 
   await p(remoteAlice.close)(true)

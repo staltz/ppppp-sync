@@ -53,21 +53,21 @@ test('sync a thread where both peers have portions', async (t) => {
   const bob = createPeer({ name: 'bob' })
 
   await alice.db.loaded()
-  const aliceID = await p(alice.db.identity.create)({
+  const aliceID = await p(alice.db.account.create)({
     domain: 'account',
     _nonce: 'alice',
   })
   const aliceIDMsg = alice.db.get(aliceID)
 
   await bob.db.loaded()
-  const bobID = await p(bob.db.identity.create)({
+  const bobID = await p(bob.db.account.create)({
     domain: 'account',
     _nonce: 'bob',
   })
   const bobIDMsg = bob.db.get(bobID)
 
   // Alice created Carol
-  const carolID = await p(alice.db.identity.create)({
+  const carolID = await p(alice.db.account.create)({
     domain: 'account',
     keypair: carolKeypair,
     _nonce: 'carol',
@@ -75,7 +75,7 @@ test('sync a thread where both peers have portions', async (t) => {
   const carolIDMsg = alice.db.get(carolID)
 
   // Alice created Dave
-  const daveID = await p(alice.db.identity.create)({
+  const daveID = await p(alice.db.account.create)({
     domain: 'account',
     keypair: daveKeypair,
     _nonce: 'dave',
@@ -91,7 +91,7 @@ test('sync a thread where both peers have portions', async (t) => {
   await p(bob.db.add)(daveIDMsg, daveID)
 
   const startA = await p(alice.db.feed.publish)({
-    identity: aliceID,
+    account: aliceID,
     domain: 'post',
     data: { text: 'A' },
   })
@@ -102,14 +102,14 @@ test('sync a thread where both peers have portions', async (t) => {
   await p(bob.db.add)(startA.msg, rootHashA)
 
   const replyB1 = await p(bob.db.feed.publish)({
-    identity: bobID,
+    account: bobID,
     domain: 'post',
     data: { text: 'B1' },
     tangles: [startA.hash],
   })
 
   const replyB2 = await p(bob.db.feed.publish)({
-    identity: bobID,
+    account: bobID,
     domain: 'post',
     data: { text: 'B2' },
     tangles: [startA.hash],
@@ -122,7 +122,7 @@ test('sync a thread where both peers have portions', async (t) => {
   await p(alice.db.add)(replyB2.msg, rootHashB)
 
   const replyC1 = await p(alice.db.feed.publish)({
-    identity: carolID,
+    account: carolID,
     domain: 'post',
     data: { text: 'C1' },
     tangles: [startA.hash],
@@ -130,7 +130,7 @@ test('sync a thread where both peers have portions', async (t) => {
   })
 
   const replyD1 = await p(bob.db.feed.publish)({
-    identity: daveID,
+    account: daveID,
     domain: 'post',
     data: { text: 'D1' },
     tangles: [startA.hash],
@@ -181,14 +181,14 @@ test('sync a thread where initiator does not have the root', async (t) => {
   const bob = createPeer({ name: 'bob' })
 
   await alice.db.loaded()
-  const aliceID = await p(alice.db.identity.create)({
+  const aliceID = await p(alice.db.account.create)({
     domain: 'account',
     _nonce: 'alice',
   })
   const aliceIDMsg = alice.db.get(aliceID)
 
   await bob.db.loaded()
-  const bobID = await p(bob.db.identity.create)({
+  const bobID = await p(bob.db.account.create)({
     domain: 'account',
     _nonce: 'bob',
   })
@@ -201,20 +201,20 @@ test('sync a thread where initiator does not have the root', async (t) => {
   await p(bob.db.add)(aliceIDMsg, aliceID)
 
   const rootA = await p(alice.db.feed.publish)({
-    identity: aliceID,
+    account: aliceID,
     domain: 'post',
     data: { text: 'A' },
   })
 
   const replyA1 = await p(alice.db.feed.publish)({
-    identity: aliceID,
+    account: aliceID,
     domain: 'post',
     data: { text: 'A1' },
     tangles: [rootA.hash],
   })
 
   const replyA2 = await p(alice.db.feed.publish)({
-    identity: aliceID,
+    account: aliceID,
     domain: 'post',
     data: { text: 'A2' },
     tangles: [rootA.hash],
@@ -255,14 +255,14 @@ test('sync a thread where receiver does not have the root', async (t) => {
   const bob = createPeer({ name: 'bob' })
 
   await alice.db.loaded()
-  const aliceID = await p(alice.db.identity.create)({
+  const aliceID = await p(alice.db.account.create)({
     domain: 'account',
     _nonce: 'alice',
   })
   const aliceIDMsg = alice.db.get(aliceID)
 
   await bob.db.loaded()
-  const bobID = await p(bob.db.identity.create)({
+  const bobID = await p(bob.db.account.create)({
     domain: 'account',
     _nonce: 'bob',
   })
@@ -275,20 +275,20 @@ test('sync a thread where receiver does not have the root', async (t) => {
   await p(bob.db.add)(aliceIDMsg, aliceID)
 
   const rootA = await p(alice.db.feed.publish)({
-    identity: aliceID,
+    account: aliceID,
     domain: 'post',
     data: { text: 'A' },
   })
 
   const replyA1 = await p(alice.db.feed.publish)({
-    identity: aliceID,
+    account: aliceID,
     domain: 'post',
     data: { text: 'A1' },
     tangles: [rootA.hash],
   })
 
   const replyA2 = await p(alice.db.feed.publish)({
-    identity: aliceID,
+    account: aliceID,
     domain: 'post',
     data: { text: 'A2' },
     tangles: [rootA.hash],
@@ -328,14 +328,14 @@ test('sync a thread with reactions too', async (t) => {
   const bob = createPeer({ name: 'bob' })
 
   await alice.db.loaded()
-  const aliceID = await p(alice.db.identity.create)({
+  const aliceID = await p(alice.db.account.create)({
     domain: 'account',
     _nonce: 'alice',
   })
   const aliceIDMsg = alice.db.get(aliceID)
 
   await bob.db.loaded()
-  const bobID = await p(bob.db.identity.create)({
+  const bobID = await p(bob.db.account.create)({
     domain: 'account',
     _nonce: 'bob',
   })
@@ -348,27 +348,27 @@ test('sync a thread with reactions too', async (t) => {
   await p(bob.db.add)(aliceIDMsg, aliceID)
 
   const rootA = await p(alice.db.feed.publish)({
-    identity: aliceID,
+    account: aliceID,
     domain: 'post',
     data: { text: 'A' },
   })
 
   const replyA1 = await p(alice.db.feed.publish)({
-    identity: aliceID,
+    account: aliceID,
     domain: 'post',
     data: { text: 'A1' },
     tangles: [rootA.hash],
   })
 
   const replyA2 = await p(alice.db.feed.publish)({
-    identity: aliceID,
+    account: aliceID,
     domain: 'post',
     data: { text: 'A2' },
     tangles: [rootA.hash],
   })
 
   const reactionA3 = await p(alice.db.feed.publish)({
-    identity: aliceID,
+    account: aliceID,
     domain: 'reaction',
     data: { text: 'yes', link: replyA1.hash },
     tangles: [rootA.hash, replyA1.hash],

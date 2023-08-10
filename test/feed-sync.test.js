@@ -14,7 +14,7 @@ test('sync a feed with goal=all', async (t) => {
   await alice.db.loaded()
   await bob.db.loaded()
 
-  const carolID = await p(alice.db.identity.create)({
+  const carolID = await p(alice.db.account.create)({
     keypair: carolKeypair,
     domain: 'account',
     _nonce: 'carol',
@@ -27,7 +27,7 @@ test('sync a feed with goal=all', async (t) => {
   const carolMsgs = []
   for (let i = 1; i <= 10; i++) {
     const rec = await p(alice.db.feed.publish)({
-      identity: carolID,
+      account: carolID,
       domain: 'post',
       data: { text: 'm' + i },
       keypair: carolKeypair,
@@ -46,7 +46,7 @@ test('sync a feed with goal=all', async (t) => {
 
   {
     const arr = [...bob.db.msgs()]
-      .filter((msg) => msg.metadata.identity === carolID && msg.data)
+      .filter((msg) => msg.metadata.account === carolID && msg.data)
       .map((msg) => msg.data.text)
     assert.deepEqual(
       arr,
@@ -67,7 +67,7 @@ test('sync a feed with goal=all', async (t) => {
 
   {
     const arr = [...bob.db.msgs()]
-      .filter((msg) => msg.metadata.identity === carolID && msg.data)
+      .filter((msg) => msg.metadata.account === carolID && msg.data)
       .map((msg) => msg.data.text)
     assert.deepEqual(
       arr,
@@ -88,7 +88,7 @@ test('sync a feed with goal=newest', async (t) => {
   await alice.db.loaded()
   await bob.db.loaded()
 
-  const carolID = await p(alice.db.identity.create)({
+  const carolID = await p(alice.db.account.create)({
     keypair: carolKeypair,
     domain: 'account',
     _nonce: 'carol',
@@ -101,7 +101,7 @@ test('sync a feed with goal=newest', async (t) => {
   const carolMsgs = []
   for (let i = 1; i <= 10; i++) {
     const rec = await p(alice.db.feed.publish)({
-      identity: carolID,
+      account: carolID,
       domain: 'post',
       data: { text: 'm' + i },
       keypair: carolKeypair,
@@ -120,7 +120,7 @@ test('sync a feed with goal=newest', async (t) => {
 
   {
     const arr = [...bob.db.msgs()]
-      .filter((msg) => msg.metadata.identity === carolID && msg.data)
+      .filter((msg) => msg.metadata.account === carolID && msg.data)
       .map((msg) => msg.data.text)
     assert.deepEqual(
       arr,
@@ -141,7 +141,7 @@ test('sync a feed with goal=newest', async (t) => {
 
   {
     const arr = [...bob.db.msgs()]
-      .filter((msg) => msg.metadata.identity === carolID && msg.data)
+      .filter((msg) => msg.metadata.account === carolID && msg.data)
       .map((msg) => msg.data.text)
     assert.deepEqual(
       arr,
@@ -162,7 +162,7 @@ test('sync a feed with goal=newest but too far behind', async (t) => {
   await alice.db.loaded()
   await bob.db.loaded()
 
-  const carolID = await p(alice.db.identity.create)({
+  const carolID = await p(alice.db.account.create)({
     keypair: carolKeypair,
     domain: 'account',
     _nonce: 'carol',
@@ -175,7 +175,7 @@ test('sync a feed with goal=newest but too far behind', async (t) => {
   const carolMsgs = []
   for (let i = 1; i <= 10; i++) {
     const rec = await p(alice.db.feed.publish)({
-      identity: carolID,
+      account: carolID,
       domain: 'post',
       data: { text: 'm' + i },
       keypair: carolKeypair,
@@ -190,7 +190,7 @@ test('sync a feed with goal=newest but too far behind', async (t) => {
   await algo.pruneNewest(carolPostsRootHash, 5)
   {
     const arr = [...alice.db.msgs()]
-      .filter((msg) => msg.metadata.identity === carolID && msg.data)
+      .filter((msg) => msg.metadata.account === carolID && msg.data)
       .map((msg) => msg.data.text)
     assert.deepEqual(
       arr,
@@ -206,7 +206,7 @@ test('sync a feed with goal=newest but too far behind', async (t) => {
 
   {
     const arr = [...bob.db.msgs()]
-      .filter((msg) => msg.metadata.identity === carolID && msg.data)
+      .filter((msg) => msg.metadata.account === carolID && msg.data)
       .map((msg) => msg.data.text)
     assert.deepEqual(arr, ['m1', 'm2'], 'bob has msgs 1..2 from carol')
   }
@@ -223,7 +223,7 @@ test('sync a feed with goal=newest but too far behind', async (t) => {
 
   {
     const arr = [...bob.db.msgs()]
-      .filter((msg) => msg.metadata.identity === carolID && msg.data)
+      .filter((msg) => msg.metadata.account === carolID && msg.data)
       .map((msg) => msg.data.text)
     assert.deepEqual(
       arr,
