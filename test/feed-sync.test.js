@@ -19,10 +19,10 @@ test('sync a feed with goal=all', async (t) => {
     domain: 'account',
     _nonce: 'carol',
   })
-  const carolIDMsg = alice.db.get(carolID)
+  const carolAccountRoot = alice.db.get(carolID)
 
   // Bob knows Carol
-  await p(bob.db.add)(carolIDMsg, carolID)
+  await p(bob.db.add)(carolAccountRoot, carolID)
 
   const carolMsgs = []
   for (let i = 1; i <= 10; i++) {
@@ -36,12 +36,12 @@ test('sync a feed with goal=all', async (t) => {
   }
   assert('alice has msgs 1..10 from carol')
 
-  const carolPostsRootHash = alice.db.feed.getId(carolID, 'post')
-  const carolPostsRootMsg = alice.db.get(carolPostsRootHash)
+  const carolPostsMootID = alice.db.feed.getID(carolID, 'post')
+  const carolPostsMoot = alice.db.get(carolPostsMootID)
 
-  await p(bob.db.add)(carolPostsRootMsg, carolPostsRootHash)
+  await p(bob.db.add)(carolPostsMoot, carolPostsMootID)
   for (let i = 0; i < 7; i++) {
-    await p(bob.db.add)(carolMsgs[i], carolPostsRootHash)
+    await p(bob.db.add)(carolMsgs[i], carolPostsMootID)
   }
 
   {
@@ -55,8 +55,8 @@ test('sync a feed with goal=all', async (t) => {
     )
   }
 
-  bob.tangleSync.setGoal(carolPostsRootHash, 'all')
-  alice.tangleSync.setGoal(carolPostsRootHash, 'all')
+  bob.tangleSync.setGoal(carolPostsMootID, 'all')
+  alice.tangleSync.setGoal(carolPostsMootID, 'all')
 
   const remoteAlice = await p(bob.connect)(alice.getAddress())
   assert('bob connected to alice')
@@ -93,10 +93,10 @@ test('sync a feed with goal=newest', async (t) => {
     domain: 'account',
     _nonce: 'carol',
   })
-  const carolIDMsg = alice.db.get(carolID)
+  const carolAccountRoot = alice.db.get(carolID)
 
   // Bob knows Carol
-  await p(bob.db.add)(carolIDMsg, carolID)
+  await p(bob.db.add)(carolAccountRoot, carolID)
 
   const carolMsgs = []
   for (let i = 1; i <= 10; i++) {
@@ -110,12 +110,12 @@ test('sync a feed with goal=newest', async (t) => {
   }
   assert('alice has msgs 1..10 from carol')
 
-  const carolPostsRootHash = alice.db.feed.getId(carolID, 'post')
-  const carolPostsRootMsg = alice.db.get(carolPostsRootHash)
+  const carolPostsMootID = alice.db.feed.getID(carolID, 'post')
+  const carolPostsMoot = alice.db.get(carolPostsMootID)
 
-  await p(bob.db.add)(carolPostsRootMsg, carolPostsRootHash)
+  await p(bob.db.add)(carolPostsMoot, carolPostsMootID)
   for (let i = 0; i < 7; i++) {
-    await p(bob.db.add)(carolMsgs[i], carolPostsRootHash)
+    await p(bob.db.add)(carolMsgs[i], carolPostsMootID)
   }
 
   {
@@ -129,8 +129,8 @@ test('sync a feed with goal=newest', async (t) => {
     )
   }
 
-  bob.tangleSync.setGoal(carolPostsRootHash, 'newest-5')
-  alice.tangleSync.setGoal(carolPostsRootHash, 'all')
+  bob.tangleSync.setGoal(carolPostsMootID, 'newest-5')
+  alice.tangleSync.setGoal(carolPostsMootID, 'all')
 
   const remoteAlice = await p(bob.connect)(alice.getAddress())
   assert('bob connected to alice')
@@ -183,11 +183,11 @@ test('sync a feed with goal=newest but too far behind', async (t) => {
     carolMsgs.push(rec.msg)
   }
 
-  const carolPostsRootHash = alice.db.feed.getId(carolID, 'post')
-  const carolPostsRootMsg = alice.db.get(carolPostsRootHash)
+  const carolPostsMootID = alice.db.feed.getID(carolID, 'post')
+  const carolPostsMoot = alice.db.get(carolPostsMootID)
 
   const algo = new Algorithm(alice)
-  await algo.pruneNewest(carolPostsRootHash, 5)
+  await algo.pruneNewest(carolPostsMootID, 5)
   {
     const arr = [...alice.db.msgs()]
       .filter((msg) => msg.metadata.account === carolID && msg.data)
@@ -199,9 +199,9 @@ test('sync a feed with goal=newest but too far behind', async (t) => {
     )
   }
 
-  await p(bob.db.add)(carolPostsRootMsg, carolPostsRootHash)
+  await p(bob.db.add)(carolPostsMoot, carolPostsMootID)
   for (let i = 0; i < 2; i++) {
-    await p(bob.db.add)(carolMsgs[i], carolPostsRootHash)
+    await p(bob.db.add)(carolMsgs[i], carolPostsMootID)
   }
 
   {
@@ -211,8 +211,8 @@ test('sync a feed with goal=newest but too far behind', async (t) => {
     assert.deepEqual(arr, ['m1', 'm2'], 'bob has msgs 1..2 from carol')
   }
 
-  alice.tangleSync.setGoal(carolPostsRootHash, 'newest-5')
-  bob.tangleSync.setGoal(carolPostsRootHash, 'newest-5')
+  alice.tangleSync.setGoal(carolPostsMootID, 'newest-5')
+  bob.tangleSync.setGoal(carolPostsMootID, 'newest-5')
 
   const remoteAlice = await p(bob.connect)(alice.getAddress())
   assert('bob connected to alice')

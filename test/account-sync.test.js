@@ -9,8 +9,8 @@ const bobKeys = Keypair.generate('ed25519', 'bob')
 
 function getAccount(iter) {
   return [...iter]
-    .filter((msg) => msg.metadata.account === 'self' && msg.data)
-    .map((msg) => msg.data.add.key.bytes)
+    .filter((m) => m.metadata.account === 'self' && m.data?.action === 'add')
+    .map((m) => m.data.add.key.bytes)
 }
 
 test('sync an account tangle', async (t) => {

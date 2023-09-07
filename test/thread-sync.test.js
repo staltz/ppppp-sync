@@ -95,7 +95,7 @@ test('sync a thread where both peers have portions', async (t) => {
     domain: 'post',
     data: { text: 'A' },
   })
-  const rootHashA = alice.db.feed.getId(aliceID, 'post')
+  const rootHashA = alice.db.feed.getID(aliceID, 'post')
   const rootMsgA = alice.db.get(rootHashA)
 
   await p(bob.db.add)(rootMsgA, rootHashA)
@@ -105,16 +105,16 @@ test('sync a thread where both peers have portions', async (t) => {
     account: bobID,
     domain: 'post',
     data: { text: 'B1' },
-    tangles: [startA.hash],
+    tangles: [startA.id],
   })
 
   const replyB2 = await p(bob.db.feed.publish)({
     account: bobID,
     domain: 'post',
     data: { text: 'B2' },
-    tangles: [startA.hash],
+    tangles: [startA.id],
   })
-  const rootHashB = bob.db.feed.getId(bobID, 'post')
+  const rootHashB = bob.db.feed.getID(bobID, 'post')
   const rootMsgB = bob.db.get(rootHashB)
 
   await p(alice.db.add)(rootMsgB, rootHashB)
@@ -125,7 +125,7 @@ test('sync a thread where both peers have portions', async (t) => {
     account: carolID,
     domain: 'post',
     data: { text: 'C1' },
-    tangles: [startA.hash],
+    tangles: [startA.id],
     keypair: carolKeypair,
   })
 
@@ -133,7 +133,7 @@ test('sync a thread where both peers have portions', async (t) => {
     account: daveID,
     domain: 'post',
     data: { text: 'D1' },
-    tangles: [startA.hash],
+    tangles: [startA.id],
     keypair: daveKeypair,
   })
 
@@ -149,8 +149,8 @@ test('sync a thread where both peers have portions', async (t) => {
     'bob has another portion of the thread'
   )
 
-  bob.tangleSync.setGoal(startA.hash, 'all')
-  alice.tangleSync.setGoal(startA.hash, 'all')
+  bob.tangleSync.setGoal(startA.id, 'all')
+  alice.tangleSync.setGoal(startA.id, 'all')
 
   const remoteAlice = await p(bob.connect)(alice.getAddress())
   assert('bob connected to alice')
@@ -210,14 +210,14 @@ test('sync a thread where initiator does not have the root', async (t) => {
     account: aliceID,
     domain: 'post',
     data: { text: 'A1' },
-    tangles: [rootA.hash],
+    tangles: [rootA.id],
   })
 
   const replyA2 = await p(alice.db.feed.publish)({
     account: aliceID,
     domain: 'post',
     data: { text: 'A2' },
-    tangles: [rootA.hash],
+    tangles: [rootA.id],
   })
 
   assert.deepEqual(
@@ -228,9 +228,9 @@ test('sync a thread where initiator does not have the root', async (t) => {
 
   assert.deepEqual(getTexts(bob.db.msgs()), [], 'bob has nothing')
 
-  bob.tangleSync.setGoal(rootA.hash, 'all')
+  bob.tangleSync.setGoal(rootA.id, 'all')
   // ON PURPOSE: alice does not set the goal
-  // alice.tangleSync.setGoal(rootA.hash, 'all')
+  // alice.tangleSync.setGoal(rootA.id, 'all')
 
   const remoteAlice = await p(bob.connect)(alice.getAddress())
   assert('bob connected to alice')
@@ -284,14 +284,14 @@ test('sync a thread where receiver does not have the root', async (t) => {
     account: aliceID,
     domain: 'post',
     data: { text: 'A1' },
-    tangles: [rootA.hash],
+    tangles: [rootA.id],
   })
 
   const replyA2 = await p(alice.db.feed.publish)({
     account: aliceID,
     domain: 'post',
     data: { text: 'A2' },
-    tangles: [rootA.hash],
+    tangles: [rootA.id],
   })
 
   assert.deepEqual(
@@ -302,8 +302,8 @@ test('sync a thread where receiver does not have the root', async (t) => {
 
   assert.deepEqual(getTexts(bob.db.msgs()), [], 'bob has nothing')
 
-  bob.tangleSync.setGoal(rootA.hash, 'all')
-  alice.tangleSync.setGoal(rootA.hash, 'all')
+  bob.tangleSync.setGoal(rootA.id, 'all')
+  alice.tangleSync.setGoal(rootA.id, 'all')
 
   const remoteBob = await p(alice.connect)(bob.getAddress())
   assert('alice connected to bob')
@@ -357,21 +357,21 @@ test('sync a thread with reactions too', async (t) => {
     account: aliceID,
     domain: 'post',
     data: { text: 'A1' },
-    tangles: [rootA.hash],
+    tangles: [rootA.id],
   })
 
   const replyA2 = await p(alice.db.feed.publish)({
     account: aliceID,
     domain: 'post',
     data: { text: 'A2' },
-    tangles: [rootA.hash],
+    tangles: [rootA.id],
   })
 
   const reactionA3 = await p(alice.db.feed.publish)({
     account: aliceID,
     domain: 'reaction',
-    data: { text: 'yes', link: replyA1.hash },
-    tangles: [rootA.hash, replyA1.hash],
+    data: { text: 'yes', link: replyA1.id },
+    tangles: [rootA.id, replyA1.id],
   })
 
   assert.deepEqual(
@@ -382,8 +382,8 @@ test('sync a thread with reactions too', async (t) => {
 
   assert.deepEqual(getTexts(bob.db.msgs()), [], 'bob has nothing')
 
-  bob.tangleSync.setGoal(rootA.hash, 'all')
-  alice.tangleSync.setGoal(rootA.hash, 'all')
+  bob.tangleSync.setGoal(rootA.id, 'all')
+  alice.tangleSync.setGoal(rootA.id, 'all')
 
   const remoteBob = await p(alice.connect)(bob.getAddress())
   assert('alice connected to bob')
