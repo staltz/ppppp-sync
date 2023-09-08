@@ -212,7 +212,7 @@ test('sync a feed with goal=newest but too far behind', async (t) => {
   }
 
   alice.tangleSync.setGoal(carolPostsMootID, 'newest-5')
-  bob.tangleSync.setGoal(carolPostsMootID, 'newest-5')
+  bob.tangleSync.setGoal(carolPostsMootID, 'newest-8')
 
   const remoteAlice = await p(bob.connect)(alice.getAddress())
   assert('bob connected to alice')
