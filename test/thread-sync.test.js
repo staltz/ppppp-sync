@@ -149,8 +149,8 @@ test('sync a thread where both peers have portions', async (t) => {
     'bob has another portion of the thread'
   )
 
-  bob.tangleSync.setGoal(startA.id, 'all')
-  alice.tangleSync.setGoal(startA.id, 'all')
+  bob.goals.set(startA.id, 'all')
+  alice.goals.set(startA.id, 'all')
 
   const remoteAlice = await p(bob.connect)(alice.getAddress())
   assert('bob connected to alice')
@@ -228,9 +228,9 @@ test('sync a thread where initiator does not have the root', async (t) => {
 
   assert.deepEqual(getTexts(bob.db.msgs()), [], 'bob has nothing')
 
-  bob.tangleSync.setGoal(rootA.id, 'all')
+  bob.goals.set(rootA.id, 'all')
   // ON PURPOSE: alice does not set the goal
-  // alice.tangleSync.setGoal(rootA.id, 'all')
+  // alice.goals.set(rootA.id, 'all')
 
   const remoteAlice = await p(bob.connect)(alice.getAddress())
   assert('bob connected to alice')
@@ -302,8 +302,8 @@ test('sync a thread where receiver does not have the root', async (t) => {
 
   assert.deepEqual(getTexts(bob.db.msgs()), [], 'bob has nothing')
 
-  bob.tangleSync.setGoal(rootA.id, 'all')
-  alice.tangleSync.setGoal(rootA.id, 'all')
+  bob.goals.set(rootA.id, 'all')
+  alice.goals.set(rootA.id, 'all')
 
   const remoteBob = await p(alice.connect)(bob.getAddress())
   assert('alice connected to bob')
@@ -382,8 +382,8 @@ test('sync a thread with reactions too', async (t) => {
 
   assert.deepEqual(getTexts(bob.db.msgs()), [], 'bob has nothing')
 
-  bob.tangleSync.setGoal(rootA.id, 'all')
-  alice.tangleSync.setGoal(rootA.id, 'all')
+  bob.goals.set(rootA.id, 'all')
+  alice.goals.set(rootA.id, 'all')
 
   const remoteBob = await p(alice.connect)(bob.getAddress())
   assert('alice connected to bob')

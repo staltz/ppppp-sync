@@ -18,6 +18,7 @@ function createPeer(opts) {
     .use(require('secret-stack/plugins/net'))
     .use(require('secret-handshake-ext/secret-stack'))
     .use(require('ppppp-db'))
+    .use(require('ppppp-goals'))
     .use(require('ssb-box'))
     .use(require('../lib'))
     .call(null, {

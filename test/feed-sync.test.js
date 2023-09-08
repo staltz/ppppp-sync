@@ -55,8 +55,8 @@ test('sync a feed with goal=all', async (t) => {
     )
   }
 
-  bob.tangleSync.setGoal(carolPostsMootID, 'all')
-  alice.tangleSync.setGoal(carolPostsMootID, 'all')
+  bob.goals.set(carolPostsMootID, 'all')
+  alice.goals.set(carolPostsMootID, 'all')
 
   const remoteAlice = await p(bob.connect)(alice.getAddress())
   assert('bob connected to alice')
@@ -129,8 +129,8 @@ test('sync a feed with goal=newest', async (t) => {
     )
   }
 
-  bob.tangleSync.setGoal(carolPostsMootID, 'newest-5')
-  alice.tangleSync.setGoal(carolPostsMootID, 'all')
+  bob.goals.set(carolPostsMootID, 'newest-5')
+  alice.goals.set(carolPostsMootID, 'all')
 
   const remoteAlice = await p(bob.connect)(alice.getAddress())
   assert('bob connected to alice')
@@ -211,8 +211,8 @@ test('sync a feed with goal=newest but too far behind', async (t) => {
     assert.deepEqual(arr, ['m1', 'm2'], 'bob has msgs 1..2 from carol')
   }
 
-  alice.tangleSync.setGoal(carolPostsMootID, 'newest-5')
-  bob.tangleSync.setGoal(carolPostsMootID, 'newest-8')
+  alice.goals.set(carolPostsMootID, 'newest-5')
+  bob.goals.set(carolPostsMootID, 'newest-8')
 
   const remoteAlice = await p(bob.connect)(alice.getAddress())
   assert('bob connected to alice')

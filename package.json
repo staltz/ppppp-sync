@@ -37,6 +37,7 @@
     "c8": "7",
     "ppppp-db": "github:staltz/ppppp-db",
     "ppppp-caps": "github:staltz/ppppp-caps",
+    "ppppp-goals": "github:staltz/ppppp-goals",
     "ppppp-keypair": "github:staltz/ppppp-keypair",
     "prettier": "^2.6.2",
     "pretty-quick": "^3.1.3",
