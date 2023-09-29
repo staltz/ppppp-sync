@@ -26,7 +26,6 @@
   "dependencies": {
     "bloom-filters": "^3.0.0",
     "debug": "^4.3.4",
-    "multicb": "^1.2.2",
     "pull-stream": "^3.7.0",
     "push-stream": "^11.2.0",
     "push-stream-to-pull-stream": "^1.0.5",
