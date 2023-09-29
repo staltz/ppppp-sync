@@ -26,12 +26,17 @@
   "dependencies": {
     "bloom-filters": "^3.0.0",
     "debug": "^4.3.4",
+    "multicb": "1.2.2",
+    "promisify-4loc": "^1.0.0",
     "pull-stream": "^3.7.0",
     "push-stream": "^11.2.0",
     "push-stream-to-pull-stream": "^1.0.5",
     "ssb-network-errors": "^1.0.1"
   },
   "devDependencies": {
+    "@types/debug": "^4.1.9",
+    "@types/pull-stream": "3.6.3",
+    "@types/node": "16.x",
     "bs58": "^5.0.0",
     "c8": "7",
     "ppppp-db": "github:staltz/ppppp-db",
@@ -43,10 +48,14 @@
     "rimraf": "^4.4.0",
     "secret-stack": "~7.1.0",
     "secret-handshake-ext": "^0.0.8",
-    "ssb-box": "^1.0.1"
+    "ssb-box": "^1.0.1",
+    "typescript": "^5.1.3"
   },
   "scripts": {
-    "test": "node --test",
+    "clean-check": "tsc --build --clean",
+    "prepublishOnly": "npm run clean-check && tsc --build",
+    "postpublish": "npm run clean-check",
+    "test": "npm run clean-check && node --test",
     "format-code": "prettier --write \"(lib|test)/**/*.js\"",
     "format-code-staged": "pretty-quick --staged --pattern \"(lib|test)/**/*.js\"",
     "coverage": "c8 --reporter=lcov npm run test"

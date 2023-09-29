@@ -1,0 +1,16 @@
+{
+  "include": ["lib/**/*.js"],
+  "exclude": ["coverage/", "node_modules/", "test/"],
+  "compilerOptions": {
+    "checkJs": true,
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "exactOptionalPropertyTypes": true,
+    "forceConsistentCasingInFileNames": true,
+    "lib": ["es2022", "dom"],
+    "module": "node16",
+    "skipLibCheck": true,
+    "strict": true,
+    "target": "es2021"
+  }
+}
