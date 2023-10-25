@@ -6,7 +6,8 @@ const Keypair = require('ppppp-keypair')
 
 function createPeer(opts) {
   if (opts.name) {
-    opts.path ??= path.join(os.tmpdir(), 'tanglesync-' + opts.name)
+    const tmp = os.tmpdir()
+    opts.path ??= path.join(tmp, `tanglesync-${opts.name}-${Date.now()}`)
     opts.keypair ??= Keypair.generate('ed25519', opts.name)
     opts.name = undefined
   }
@@ -18,6 +19,7 @@ function createPeer(opts) {
     .use(require('secret-stack/plugins/net'))
     .use(require('secret-handshake-ext/secret-stack'))
     .use(require('ppppp-db'))
+    .use(require('ppppp-record'))
     .use(require('ppppp-goals'))
     .use(require('ssb-box'))
     .use(require('../lib'))
