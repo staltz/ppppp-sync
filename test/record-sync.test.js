@@ -99,7 +99,7 @@ test('sync goal=record with ghostSpan=2', async (t) => {
     assert.ok(erasables.has(moot.id))
 
     for (const msgID of deletables) {
-      await p(alice.db.ghosts.add)({ msgID, tangleID: moot.id, max: SPAN })
+      await p(alice.db.ghosts.add)({ msgID, tangleID: moot.id, span: SPAN })
       await p(alice.db.del)(msgID)
     }
     for (const msgID of erasables) {
