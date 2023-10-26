@@ -30,9 +30,9 @@ test('want-range for goal=all', (t) => {
   assert.deepStrictEqual(algo.wantRange([1, 3], [6, 7], goal), [6, 7])
 })
 
-test('want-range for goal=record', (t) => {
-  const algo = new Algorithm({ db: null, record: { minGhostDepth: () => 3 } })
-  const goal = { type: 'record' }
+test('want-range for goal=dict', (t) => {
+  const algo = new Algorithm({ db: null, dict: { minGhostDepth: () => 3 } })
+  const goal = { type: 'dict' }
 
   assert.deepStrictEqual(algo.wantRange([2, 4], [1, 3], goal), [3, 3])
   assert.deepStrictEqual(algo.wantRange([2, 4], [1, 5], goal), [3, 5])
