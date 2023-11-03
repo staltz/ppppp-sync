@@ -43,6 +43,7 @@
     "ppppp-caps": "github:staltz/ppppp-caps",
     "ppppp-goals": "github:staltz/ppppp-goals",
     "ppppp-keypair": "github:staltz/ppppp-keypair",
+    "ppppp-set": "github:staltz/ppppp-set",
     "prettier": "^2.6.2",
     "pretty-quick": "^3.1.3",
     "rimraf": "^4.4.0",
