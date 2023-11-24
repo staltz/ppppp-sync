@@ -10,7 +10,7 @@ const bobKeys = Keypair.generate('ed25519', 'bob')
 function getAccount(iter) {
   return [...iter]
     .filter((m) => m.metadata.account === 'self' && m.data?.action === 'add')
-    .map((m) => m.data.add.key.bytes)
+    .map((m) => m.data.key.bytes)
 }
 
 test('sync an account tangle', async (t) => {
@@ -23,7 +23,7 @@ test('sync an account tangle', async (t) => {
   // Alice's account tangle
   await alice.db.loaded()
   const aliceID = await p(alice.db.account.create)({
-    domain: 'account',
+    subdomain: 'account',
     _nonce: 'alice',
   })
 
@@ -57,9 +57,9 @@ test('sync an account tangle', async (t) => {
   const remoteAlice = await p(bob.connect)(alice.getAddress())
   assert('bob connected to alice')
 
-  bob.tangleSync.initiate()
+  bob.sync.start()
   await p(setTimeout)(1000)
-  assert('tangleSync!')
+  assert('sync!')
 
   assert.deepEqual(
     getAccount(bob.db.msgs()),

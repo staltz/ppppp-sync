@@ -35,7 +35,7 @@ test('sync goal=set with ghostSpan=2', async (t) => {
 
   // Alice sets up an account and a set
   const aliceID = await p(alice.db.account.create)({
-    domain: 'account',
+    subdomain: 'account',
     _nonce: 'alice',
   })
   await p(alice.set.load)(aliceID)
@@ -67,14 +67,6 @@ test('sync goal=set with ghostSpan=2', async (t) => {
     if (rec.msg.data?.add?.[0] === 'Alice') rec5 = rec
     if (rec.msg.data?.add?.[0] === 'Bob') rec6 = rec
   }
-
-console.log('moot', moot.id);
-console.log('msg1', rec1.id);
-console.log('msg2', rec2.id);
-console.log('msg3', rec3.id);
-console.log('msg4', rec4.id);
-console.log('msg5', rec5.id);
-console.log('msg6', rec6.id);
 
   // Bob knows the whole set
   await p(bob.db.add)(moot.msg, moot.id)
@@ -127,24 +119,23 @@ console.log('msg6', rec6.id);
     }
   }
 
-  // Assert situation at Alice before tangleSync
+  // Assert situation at Alice before sync
   {
     const arr = getItems([...alice.db.msgs()])
-    console.log(arr)
     assert.deepEqual(arr, ['Alice', 'Bob'], 'alice has Alice+Bob set')
   }
   assert.deepEqual(alice.db.ghosts.get(moot.id), [rec1.id, rec2.id])
 
-  // Trigger tangleSync
+  // Trigger sync
   alice.goals.set(moot.id, 'set')
   bob.goals.set(moot.id, 'set')
   const remoteAlice = await p(bob.connect)(alice.getAddress())
   assert('bob connected to alice')
-  bob.tangleSync.initiate()
+  bob.sync.start()
   await p(setTimeout)(1000)
-  assert('tangleSync!')
+  assert('sync!')
 
-  // Assert situation at Alice after tangleSync: she got the branched off msg
+  // Assert situation at Alice after sync: she got the branched off msg
   {
     const arr = getItems([...alice.db.msgs()])
     assert.deepEqual(

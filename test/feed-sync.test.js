@@ -16,7 +16,7 @@ test('sync a feed with goal=all', async (t) => {
 
   const carolID = await p(alice.db.account.create)({
     keypair: carolKeypair,
-    domain: 'account',
+    subdomain: 'account',
     _nonce: 'carol',
   })
   const carolAccountRoot = alice.db.get(carolID)
@@ -61,9 +61,9 @@ test('sync a feed with goal=all', async (t) => {
   const remoteAlice = await p(bob.connect)(alice.getAddress())
   assert('bob connected to alice')
 
-  bob.tangleSync.initiate()
+  bob.sync.start()
   await p(setTimeout)(1000)
-  assert('tangleSync!')
+  assert('sync!')
 
   {
     const arr = [...bob.db.msgs()]
@@ -90,7 +90,7 @@ test('sync a feed with goal=newest', async (t) => {
 
   const carolID = await p(alice.db.account.create)({
     keypair: carolKeypair,
-    domain: 'account',
+    subdomain: 'account',
     _nonce: 'carol',
   })
   const carolAccountRoot = alice.db.get(carolID)
@@ -135,9 +135,9 @@ test('sync a feed with goal=newest', async (t) => {
   const remoteAlice = await p(bob.connect)(alice.getAddress())
   assert('bob connected to alice')
 
-  bob.tangleSync.initiate()
+  bob.sync.start()
   await p(setTimeout)(1000)
-  assert('tangleSync!')
+  assert('sync!')
 
   {
     const arr = [...bob.db.msgs()]
@@ -164,7 +164,7 @@ test('sync a feed with goal=newest but too far behind', async (t) => {
 
   const carolID = await p(alice.db.account.create)({
     keypair: carolKeypair,
-    domain: 'account',
+    subdomain: 'account',
     _nonce: 'carol',
   })
   const carolIDMsg = alice.db.get(carolID)
@@ -217,9 +217,9 @@ test('sync a feed with goal=newest but too far behind', async (t) => {
   const remoteAlice = await p(bob.connect)(alice.getAddress())
   assert('bob connected to alice')
 
-  bob.tangleSync.initiate()
+  bob.sync.start()
   await p(setTimeout)(1000)
-  assert('tangleSync!')
+  assert('sync!')
 
   {
     const arr = [...bob.db.msgs()]

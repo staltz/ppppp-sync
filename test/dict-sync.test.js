@@ -27,7 +27,7 @@ test('sync goal=dict with ghostSpan=2', async (t) => {
 
   // Alice sets up an account and a dict
   const aliceID = await p(alice.db.account.create)({
-    domain: 'account',
+    subdomain: 'account',
     _nonce: 'alice',
   })
   await p(alice.dict.load)(aliceID)
@@ -107,7 +107,7 @@ test('sync goal=dict with ghostSpan=2', async (t) => {
     }
   }
 
-  // Assert situation at Alice before tangleSync
+  // Assert situation at Alice before sync
   {
     const arr = [...alice.db.msgs()]
       .map((msg) => msg.data?.update)
@@ -117,16 +117,16 @@ test('sync goal=dict with ghostSpan=2', async (t) => {
   }
   assert.deepEqual(alice.db.ghosts.get(moot.id), [rec1.id, rec2.id])
 
-  // Trigger tangleSync
+  // Trigger sync
   alice.goals.set(moot.id, 'dict')
   bob.goals.set(moot.id, 'dict')
   const remoteAlice = await p(bob.connect)(alice.getAddress())
   assert('bob connected to alice')
-  bob.tangleSync.initiate()
+  bob.sync.start()
   await p(setTimeout)(1000)
-  assert('tangleSync!')
+  assert('sync!')
 
-  // Assert situation at Alice before tangleSync: she got the branched off msg
+  // Assert situation at Alice before sync: she got the branched off msg
   {
     const arr = [...alice.db.msgs()]
       .map((msg) => msg.data?.update)

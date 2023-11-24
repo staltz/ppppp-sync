@@ -54,21 +54,21 @@ test('sync a thread where both peers have portions', async (t) => {
 
   await alice.db.loaded()
   const aliceID = await p(alice.db.account.create)({
-    domain: 'account',
+    subdomain: 'account',
     _nonce: 'alice',
   })
   const aliceIDMsg = alice.db.get(aliceID)
 
   await bob.db.loaded()
   const bobID = await p(bob.db.account.create)({
-    domain: 'account',
+    subdomain: 'account',
     _nonce: 'bob',
   })
   const bobIDMsg = bob.db.get(bobID)
 
   // Alice created Carol
   const carolID = await p(alice.db.account.create)({
-    domain: 'account',
+    subdomain: 'account',
     keypair: carolKeypair,
     _nonce: 'carol',
   })
@@ -76,7 +76,7 @@ test('sync a thread where both peers have portions', async (t) => {
 
   // Alice created Dave
   const daveID = await p(alice.db.account.create)({
-    domain: 'account',
+    subdomain: 'account',
     keypair: daveKeypair,
     _nonce: 'dave',
   })
@@ -155,9 +155,9 @@ test('sync a thread where both peers have portions', async (t) => {
   const remoteAlice = await p(bob.connect)(alice.getAddress())
   assert('bob connected to alice')
 
-  bob.tangleSync.initiate()
+  bob.sync.start()
   await p(setTimeout)(1000)
-  assert('tangleSync!')
+  assert('sync!')
 
   assert.deepEqual(
     getTexts(alice.db.msgs()),
@@ -182,14 +182,14 @@ test('sync a thread where initiator does not have the root', async (t) => {
 
   await alice.db.loaded()
   const aliceID = await p(alice.db.account.create)({
-    domain: 'account',
+    subdomain: 'account',
     _nonce: 'alice',
   })
   const aliceIDMsg = alice.db.get(aliceID)
 
   await bob.db.loaded()
   const bobID = await p(bob.db.account.create)({
-    domain: 'account',
+    subdomain: 'account',
     _nonce: 'bob',
   })
   const bobIDMsg = bob.db.get(bobID)
@@ -235,9 +235,9 @@ test('sync a thread where initiator does not have the root', async (t) => {
   const remoteAlice = await p(bob.connect)(alice.getAddress())
   assert('bob connected to alice')
 
-  bob.tangleSync.initiate()
+  bob.sync.start()
   await p(setTimeout)(1000)
-  assert('tangleSync!')
+  assert('sync!')
 
   assert.deepEqual(
     getTexts(bob.db.msgs()),
@@ -256,14 +256,14 @@ test('sync a thread where receiver does not have the root', async (t) => {
 
   await alice.db.loaded()
   const aliceID = await p(alice.db.account.create)({
-    domain: 'account',
+    subdomain: 'account',
     _nonce: 'alice',
   })
   const aliceIDMsg = alice.db.get(aliceID)
 
   await bob.db.loaded()
   const bobID = await p(bob.db.account.create)({
-    domain: 'account',
+    subdomain: 'account',
     _nonce: 'bob',
   })
   const bobIDMsg = bob.db.get(bobID)
@@ -308,9 +308,9 @@ test('sync a thread where receiver does not have the root', async (t) => {
   const remoteBob = await p(alice.connect)(bob.getAddress())
   assert('alice connected to bob')
 
-  alice.tangleSync.initiate()
+  alice.sync.start()
   await p(setTimeout)(1000)
-  assert('tangleSync!')
+  assert('sync!')
 
   assert.deepEqual(
     getTexts(bob.db.msgs()),
@@ -329,14 +329,14 @@ test('sync a thread with reactions too', async (t) => {
 
   await alice.db.loaded()
   const aliceID = await p(alice.db.account.create)({
-    domain: 'account',
+    subdomain: 'account',
     _nonce: 'alice',
   })
   const aliceIDMsg = alice.db.get(aliceID)
 
   await bob.db.loaded()
   const bobID = await p(bob.db.account.create)({
-    domain: 'account',
+    subdomain: 'account',
     _nonce: 'bob',
   })
   const bobIDMsg = bob.db.get(bobID)
@@ -388,9 +388,9 @@ test('sync a thread with reactions too', async (t) => {
   const remoteBob = await p(alice.connect)(bob.getAddress())
   assert('alice connected to bob')
 
-  alice.tangleSync.initiate()
+  alice.sync.start()
   await p(setTimeout)(1000)
-  assert('tangleSync!')
+  assert('sync!')
 
   assert.deepEqual(
     getTexts(bob.db.msgs()),

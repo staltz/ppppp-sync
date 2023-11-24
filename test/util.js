@@ -7,7 +7,7 @@ const Keypair = require('ppppp-keypair')
 function createPeer(opts) {
   if (opts.name) {
     const tmp = os.tmpdir()
-    opts.path ??= path.join(tmp, `tanglesync-${opts.name}-${Date.now()}`)
+    opts.path ??= path.join(tmp, `ppppp-sync-${opts.name}-${Date.now()}`)
     opts.keypair ??= Keypair.generate('ed25519', opts.name)
     opts.name = undefined
   }
