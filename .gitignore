@@ -4,6 +4,7 @@ pnpm-lock.yaml
 package-lock.json
 coverage
 *~
+lib/*.d.ts
 
 # For misc scripts and experiments:
 /gitignored

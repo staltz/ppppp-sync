@@ -11,8 +11,7 @@
   },
   "main": "index.js",
   "files": [
-    "*.js",
-    "lib/*.js"
+    "lib/**"
   ],
   "exports": {
     ".": {
