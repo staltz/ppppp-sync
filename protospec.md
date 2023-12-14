@@ -9,8 +9,10 @@ sequenceDiagram
 
 participant A as Alice
 participant B as Bob
-note over A: I want to sync tangle with ID "T"
-A->>B: 1: Send local have-range for T
+note over A: I want to sync tangle<br/>with ID "T" and goal aliceG
+note over B: I want to sync tangle<br/>with ID "T" and goal bobG
+note over A: aliceHave := getHaveRange(T)
+A->>B: Phase 1: Send T and aliceHave
 
 %% opt Alice's have-range is empty
 %%     B->>A: 2: Send local have-range and (empty) want-range for ID
@@ -19,30 +21,95 @@ A->>B: 1: Send local have-range for T
 %%     note over A: done
 %% end
 
-Note over B: Calculate local want-range based on<br/>local have-range and remote have-range
-B->>A: 2: Send local have-range and want-range for T
+Note over B: bobHave := getHaveRange(T)
+Note over B: bobWant := getWantRange(bobHave, aliceHave, bobG)
+B->>A: Phase 2: Send T, bobHave and bobWant
 
 %% opt Bob's have-range is empty
 %%       A->>B: All msgs in remote want-range
 %%       note over B: done
 %% end
 
-Note over A: Calculate BF over all<br />msgs in my want-range
-A->>B: 3: Send local want-range and BF for round 0
-Note over B: Read BF to know which<br />msgs they are (maybe) missing
-Note over B: Calculate BF over all<br />msgs in my want-range
-B->>A: 4: Send BF for round 0 and A's round 0 missing msg IDs
-Note over A: ...
-A->>B: 5: Send BF for round 1 and B's missing round 0 msg IDs
-Note over B: ...
-B->>A: 6: Send BF for round 1 and A' missing round 1 msg IDs
-Note over A: ...
-A->>B: 7: Send BF for round 2 and B's missing round 2 msg IDs
-Note over B: ...
-B->>A: 8: Send BF for round 2 and A's missing msgs
-Note over A: Commit received msgs
-A->>B: 9: Send B's missing msgs
-Note over B: Commit received msgs
+Note over A: aliceWant := getWantRange(aliceHave, bobHave, aliceG)
+Note over A: aliceBF0 := bloomFor(T, 0, aliceWant)
+A->>B: Phase 3: Send T, aliceWant and aliceBF0
+Note over B: aliceMiss0 := msgsMissing(T, 0, aliceWant, aliceBF0)
+Note over B: bobBF0 := bloomFor(T, 0, bobWant)
+B->>A: Phase 4: Send T, bobBF0 and aliceMiss0
+Note over A: bobMiss0 := msgsMissing(T, 0, bobWant, bobBF0)
+Note over A: aliceBF1 := bloomFor(T, 1, aliceWant, aliceMiss0)
+A->>B: Phase 5: Send T, aliceBF1 and bobMiss0
+Note over B: aliceMiss1 := msgsMissing(T, 1, aliceWant, aliceBF1)
+Note over B: bobBF1 := bloomFor(T, 1, bobWant, bobMiss0)
+B->>A: Phase 6: Send T, bobBF1 and aliceMiss1
+Note over A: bobMiss1 := msgsMissing(T, 1, bobWant, bobBF1)
+Note over A: aliceBF2 := bloomFor(T, 2, aliceWant, aliceMiss0 + aliceMiss1)
+A->>B: Phase 7: Send T, aliceBF2 and bobMiss1
+Note over B: aliceMiss2 := msgsMissing(T, 2, aliceWant, aliceBF2)
+Note over B: aliceMiss := aliceMiss0 + aliceMiss1 + aliceMiss2
+Note over B: aliceMsgs := tangleSlice(T, aliceMiss)
+Note over B: bobBF2 := bloomFor(T, 2, bobWant, bobMiss0 + bobMiss1)
+B->>A: Phase 8: Send T, bobBF2 and aliceMsgs
+Note over A: commit(aliceMsgs)
+Note over A: bobMiss2 := msgsMissing(T, 2, bobWant, bobBF2)
+Note over A: bobMiss := bobMiss0 + bobMiss1 + bobMiss2
+Note over A: bobMsgs := tangleSlice(T, bobMiss)
+A->>B: Phase 9: Send T and bobMsgs
+Note over B: commit(bobMsgs)
+```
+
+Methods:
+
+```
+/**
+ * Determines the range of depths of msgs I have in the tangle
+ */
+getHaveRange(tangleID) -> [minDepth, maxDepth]
+```
+
+```
+/**
+ * Determines the range of depths of (new) msgs I want from the tangle
+ */
+getWantRange(localHaveRange, remoteHaveRange, goal) -> [minDepth, maxDepth]
+```
+
+```
+/**
+ * Creates a serialized bloom filter containing the identifiers `${round}${msgID}` for:
+ * - Each msg in the tangle `tangleID` within depth `range` (inclusive)
+ * - Each "ghost" msg ID for this tangle
+ * - Each "extra" msg ID from `extraMsgIDs`
+ */
+bloomFor(tangleId, round, range, extraMsgIDs) -> Bloom
+```
+
+```
+/**
+ * Returns the msg IDs in the tangle `tangleID` which satisfy:
+ * - `msg.metadata.tangles[tangleID].depth` within `range` (inclusive)
+ * - `${round}${msgID}` not in `bloom`
+ */
+msgsMissing(tangleID, round, range, bloom) -> Array<MsgID>
+```
+
+```
+/**
+ * Identifies the lowest depth msg in `msgID` as "lowest" and then returns an
+ * Array of msgs with:
+ * - `lowest`
+ * - msgs posterior to `lowest`
+ * - trail from `lowest` to the root
+ * The Array is topologically sorted.
+ */
+tangleSlice(tangleID, msgIDs) -> Array<Msg>
+```
+
+```
+/**
+ * Receives an Array of PPPPP msgs, validates and persists each in the database.
+ */
+commit(msgs) -> void
 ```
 
 Peers exchange
