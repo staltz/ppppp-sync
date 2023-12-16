@@ -1,7 +1,11 @@
-The bloom filter is a representation of msgs I already have in my want-range,
-so you know you can (probably?) skip sending them to me.
+For each given tangle, peers exchange ranges (tuples `[minDepth, maxDepth]`)
+"haveRange" and "wantRange". Then each peer creates a bloom filter representing
+the msgs they currently have in their wantRange, and these such bloom filters.
+Based on the remote peer's bloom filter, they exchange msgs that appear to be
+missing. The bloom filter is a representation of msgs I already have in my want-range,
+so you know you can (probably?) skip sending them to me. The "probably?" uncertainty is reduced by doing several rounds of such exchange. In the end, each peer knows with high certainty which msgs the other peer is missing in their declared want-range, and thus exchange such msgs.
 
-The "probably?" uncertainty is reduced by doing several rounds.
+In the process, associated account msgs are included even though the tangle being replicated might not be an account tangle. This is because validation of a received tangle msg may require the account msgs.
 
 
 ```mermaid
@@ -54,8 +58,9 @@ Note over A: commit(aliceMsgs)
 Note over A: bobMiss2 := msgsMissing(T, 2, bobWant, bobBF2)
 Note over A: bobMiss := bobMiss0 + bobMiss1 + bobMiss2
 Note over A: bobMsgs := tangleSlice(T, bobMiss)
-A->>B: Phase 9: Send T and bobMsgs
-Note over B: commit(bobMsgs)
+Note over A: msgs := bobMsgs + associatedAccountMsgs(bobMsgs)
+A->>B: Phase 9: Send T and msgs
+Note over B: commit(msgs)
 ```
 
 Methods:
@@ -76,8 +81,17 @@ getWantRange(localHaveRange, remoteHaveRange, goal) -> [minDepth, maxDepth]
 
 ```
 /**
+ * For each `msg` in `msgs`, pick the set of msgs from the tangle `msg.metadata.account` (up to `msg.metadata.accountTips`), then combine together all these subsets.
+ * Returns all such account msgs.
+ */
+associatedAccountMsgs(msgs)
+```
+
+```
+/**
  * Creates a serialized bloom filter containing the identifiers `${round}${msgID}` for:
  * - Each msg in the tangle `tangleID` within depth `range` (inclusive)
+ * - Each msg in associatedAccountMsgs(tangle msgs above)
  * - Each "ghost" msg ID for this tangle
  * - Each "extra" msg ID from `extraMsgIDs`
  */
@@ -89,6 +103,7 @@ bloomFor(tangleId, round, range, extraMsgIDs) -> Bloom
  * Returns the msg IDs in the tangle `tangleID` which satisfy:
  * - `msg.metadata.tangles[tangleID].depth` within `range` (inclusive)
  * - `${round}${msgID}` not in `bloom`
+ * Plus msg IDs of associatedAccountMsgs(tangle msgs above)
  */
 msgsMissing(tangleID, round, range, bloom) -> Array<MsgID>
 ```

@@ -6,6 +6,162 @@ const Algorithm = require('../lib/algorithm')
 const { createPeer } = require('./util')
 
 const carolKeypair = Keypair.generate('ed25519', 'carol')
+const bobKeypair2 = Keypair.generate('ed25519', 'bob2')
+
+test('sync a feed without pre-knowing the owner account', async (t) => {
+  const alice = createPeer({ name: 'alice' })
+  const bob = createPeer({ name: 'bob' })
+
+  await alice.db.loaded()
+  await bob.db.loaded()
+
+  const bobID = await p(bob.db.account.create)({
+    subdomain: 'account',
+    _nonce: 'bob',
+  })
+
+  for (let i = 1; i <= 5; i++) {
+    await p(bob.db.feed.publish)({
+      account: bobID,
+      domain: 'post',
+      data: { text: 'm' + i },
+    })
+  }
+  assert('bob published posts 1..5')
+
+  const bobPostsID = bob.db.feed.getID(bobID, 'post')
+
+  {
+    const arr = [...alice.db.msgs()]
+      .filter((msg) => msg.metadata.account === bobID && msg.data)
+      .map((msg) => msg.data.text)
+    assert.deepEqual(arr, [], 'alice has no posts from bob')
+  }
+
+  bob.goals.set(bobPostsID, 'all')
+  alice.goals.set(bobPostsID, 'all')
+
+  const remoteAlice = await p(bob.connect)(alice.getAddress())
+  assert('bob connected to alice')
+
+  bob.sync.start()
+  await p(setTimeout)(1000)
+  assert('sync!')
+
+  {
+    const arr = [...alice.db.msgs()]
+      .filter((msg) => msg.metadata.account === bobID && msg.data)
+      .map((msg) => msg.data.text)
+    assert.deepEqual(
+      arr,
+      ['m1', 'm2', 'm3', 'm4', 'm5'],
+      'alice has posts 1..5 from bob'
+    )
+  }
+
+  await p(remoteAlice.close)(true)
+  await p(alice.close)(true)
+  await p(bob.close)(true)
+})
+
+test('sync a feed with updated msgs from new account keypair', async (t) => {
+  const alice = createPeer({ name: 'alice' })
+  const bob = createPeer({ name: 'bob' })
+
+  await alice.db.loaded()
+  await bob.db.loaded()
+
+  const bobID = await p(bob.db.account.create)({
+    subdomain: 'account',
+    _nonce: 'bob',
+  })
+
+  for (let i = 1; i <= 5; i++) {
+    await p(bob.db.feed.publish)({
+      account: bobID,
+      domain: 'post',
+      data: { text: 'm' + i },
+    })
+  }
+  assert('bob published posts 1..5')
+
+  const bobPostsID = bob.db.feed.getID(bobID, 'post')
+
+  {
+    const arr = [...alice.db.msgs()]
+      .filter((msg) => msg.metadata.account === bobID && msg.data)
+      .map((msg) => msg.data.text)
+    assert.deepEqual(arr, [], 'alice has no posts from bob')
+  }
+
+  bob.goals.set(bobPostsID, 'all')
+  alice.goals.set(bobPostsID, 'all')
+
+  const remoteAlice = await p(bob.connect)(alice.getAddress())
+  assert('bob connected to alice')
+
+  bob.sync.start()
+  await p(setTimeout)(1000)
+  assert('sync!')
+
+  {
+    const arr = [...alice.db.msgs()]
+      .filter((msg) => msg.metadata.account === bobID && msg.data)
+      .map((msg) => msg.data.text)
+    assert.deepEqual(
+      arr,
+      ['m1', 'm2', 'm3', 'm4', 'm5'],
+      'alice has posts 1..5 from bob'
+    )
+  }
+
+  await p(remoteAlice.close)(true)
+
+  // --------------------------------------------
+  // Bob adds a new keypair and published with it
+  // --------------------------------------------
+  const consent = bob.db.account.consent({
+    account: bobID,
+    keypair: bobKeypair2,
+  })
+  await p(bob.db.account.add)({
+    account: bobID,
+    keypair: bobKeypair2,
+    consent,
+    powers: [],
+  })
+  for (let i = 6; i <= 7; i++) {
+    await p(bob.db.feed.publish)({
+      account: bobID,
+      keypair: bobKeypair2,
+      domain: 'post',
+      data: { text: 'm' + i },
+    })
+  }
+  assert('bob with new keypair published posts 6..7')
+
+  const remoteAlice2 = await p(bob.connect)(alice.getAddress())
+  assert('bob connected to alice')
+
+  bob.sync.start()
+  await p(setTimeout)(1000)
+  assert('sync!')
+
+  {
+    const arr = [...alice.db.msgs()]
+      .filter((msg) => msg.metadata.account === bobID && msg.data)
+      .map((msg) => msg.data.text)
+    assert.deepEqual(
+      arr,
+      ['m1', 'm2', 'm3', 'm4', 'm5', 'm6', 'm7'],
+      'alice has posts 1..7 from bob'
+    )
+  }
+
+  await p(remoteAlice2.close)(true)
+  await p(alice.close)(true)
+  await p(bob.close)(true)
+})
 
 test('sync a feed with goal=all', async (t) => {
   const alice = createPeer({ name: 'alice' })
