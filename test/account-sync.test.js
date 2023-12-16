@@ -51,13 +51,16 @@ test('sync an account tangle', async (t) => {
     "bob doesn't have alice's account tangle"
   )
 
-  bob.goals.set(aliceID, 'all')
-  alice.goals.set(aliceID, 'all')
 
+  // start() on purpose before connect, to test whether this also works
+  bob.sync.start()
   const remoteAlice = await p(bob.connect)(alice.getAddress())
   assert('bob connected to alice')
 
-  bob.sync.start()
+  // Set goals on purpose after connect, to test whether this also works
+  bob.goals.set(aliceID, 'all')
+  alice.goals.set(aliceID, 'all')
+
   await p(setTimeout)(1000)
   assert('sync!')
 
