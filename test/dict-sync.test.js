@@ -2,7 +2,7 @@ const test = require('node:test')
 const assert = require('node:assert')
 const p = require('node:util').promisify
 const Keypair = require('ppppp-keypair')
-const MsgV3 = require('ppppp-db/msg-v3')
+const MsgV4 = require('ppppp-db/msg-v4')
 const { createPeer } = require('./util')
 
 const aliceKeypair = Keypair.generate('ed25519', 'alice')
@@ -67,10 +67,10 @@ test('sync goal=dict with ghostSpan=2', async (t) => {
 
   // Bob knows a branched off msg that Alice doesn't know
   {
-    const tangle = new MsgV3.Tangle(moot.id)
+    const tangle = new MsgV4.Tangle(moot.id)
     tangle.add(moot.id, moot.msg)
     tangle.add(rec1.id, rec1.msg)
-    const msg = MsgV3.create({
+    const msg = MsgV4.create({
       keypair: aliceKeypair,
       domain: 'dict_v1__profile',
       account: aliceID,
