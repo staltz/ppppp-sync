@@ -17,7 +17,9 @@ test('sync goal=dict with ghostSpan=2', async (t) => {
   const SPAN = 5
   const alice = createPeer({
     name: 'alice',
-    keypair: aliceKeypair,
+    global: {
+      keypair: aliceKeypair,
+    },
     dict: { ghostSpan: SPAN },
   })
   const bob = createPeer({ name: 'bob' })
@@ -132,11 +134,7 @@ test('sync goal=dict with ghostSpan=2', async (t) => {
       .map((msg) => msg.data?.update)
       .filter((x) => !!x)
       .map((x) => x.age ?? x.name ?? x.gender)
-    assert.deepEqual(
-      arr,
-      [25, 'ALICE', 'w'],
-      'alice has age+name+gender dict'
-    )
+    assert.deepEqual(arr, [25, 'ALICE', 'w'], 'alice has age+name+gender dict')
   }
   assert.deepEqual(alice.db.ghosts.get(moot.id), [rec2.id])
 

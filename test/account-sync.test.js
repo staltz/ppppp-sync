@@ -14,8 +14,8 @@ function getAccount(iter) {
 }
 
 test('sync an account tangle', async (t) => {
-  const alice = createPeer({ name: 'alice', keypair: aliceKeypair })
-  const bob = createPeer({ name: 'bob', keypair: bobKeys })
+  const alice = createPeer({ name: 'alice', global: { keypair: aliceKeypair } })
+  const bob = createPeer({ name: 'bob', global: { keypair: bobKeys } })
 
   await alice.db.loaded()
   await bob.db.loaded()
@@ -50,7 +50,6 @@ test('sync an account tangle', async (t) => {
     [],
     "bob doesn't have alice's account tangle"
   )
-
 
   // start() on purpose before connect, to test whether this also works
   bob.sync.start()

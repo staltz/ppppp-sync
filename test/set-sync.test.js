@@ -25,7 +25,9 @@ test('sync goal=set with ghostSpan=2', async (t) => {
   const SPAN = 5
   const alice = createPeer({
     name: 'alice',
-    keypair: aliceKeypair,
+    global: {
+      keypair: aliceKeypair,
+    },
     set: { ghostSpan: SPAN },
   })
   const bob = createPeer({ name: 'bob' })
