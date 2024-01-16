@@ -7,6 +7,77 @@ const { createPeer } = require('./util')
 
 const aliceKeypair = Keypair.generate('ed25519', 'alice')
 
+test('sync goal=dict from scratch', async (t) => {
+  const SPAN = 5
+  const alice = createPeer({
+    name: 'alice',
+    global: {
+      keypair: aliceKeypair,
+    },
+    dict: { ghostSpan: SPAN },
+  })
+  const bob = createPeer({ name: 'bob' })
+
+  await alice.db.loaded()
+  await bob.db.loaded()
+
+  // Alice sets up an account and a dict
+  const aliceID = await p(alice.db.account.create)({
+    subdomain: 'account',
+    _nonce: 'alice',
+  })
+  await p(alice.dict.load)(aliceID)
+  const aliceAccountRoot = alice.db.get(aliceID)
+
+  // Bob knows Alice
+  await p(bob.db.add)(aliceAccountRoot, aliceID)
+
+  // Alice constructs a dict
+  await p(alice.dict.update)('profile', { age: 25 })
+  await p(alice.dict.update)('profile', { name: 'ALICE' })
+  const mootID = alice.dict.getFeedID('profile')
+
+  // Assert situation at Alice before sync
+  {
+    const arr = [...alice.db.msgs()]
+      .map((msg) => msg.data?.update)
+      .filter((x) => !!x)
+      .map((x) => x.age ?? x.name ?? x.gender)
+    assert.deepEqual(arr, [25, 'ALICE'], 'alice has age+name dict')
+  }
+
+  // Assert situation at Bob before sync
+  {
+    const arr = [...bob.db.msgs()]
+      .map((msg) => msg.data?.update)
+      .filter((x) => !!x)
+      .map((x) => x.age ?? x.name ?? x.gender)
+    assert.deepEqual(arr, [], 'alice has empty dict')
+  }
+
+  // Trigger sync
+  alice.goals.set(mootID, 'dict')
+  bob.goals.set(mootID, 'dict')
+  const remoteAlice = await p(bob.connect)(alice.getAddress())
+  assert('bob connected to alice')
+  bob.sync.start()
+  await p(setTimeout)(1000)
+  assert('sync!')
+
+  // Assert situation at Bob after sync
+  {
+    const arr = [...bob.db.msgs()]
+      .map((msg) => msg.data?.update)
+      .filter((x) => !!x)
+      .map((x) => x.age ?? x.name ?? x.gender)
+    assert.deepEqual(arr, [25, 'ALICE'], 'alice has age+name dict')
+  }
+
+  await p(remoteAlice.close)(true)
+  await p(alice.close)(true)
+  await p(bob.close)(true)
+})
+
 //
 // R-?-?-o-o
 //   \

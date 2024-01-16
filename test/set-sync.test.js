@@ -7,13 +7,75 @@ const { createPeer } = require('./util')
 
 const aliceKeypair = Keypair.generate('ed25519', 'alice')
 
-function getItems(arr) {
+function getItems(subdomain, arr) {
   return arr
-    .filter((msg) => msg.metadata.domain === 'set_v1__follows')
+    .filter((msg) => msg.metadata.domain === `set_v1__${subdomain}`)
     .map((msg) => msg.data)
     .filter((data) => !!data)
     .map((data) => data.add?.[0] ?? '-' + data.del?.[0])
 }
+
+test('sync goal=set from scratch', async (t) => {
+  const SPAN = 5
+  const alice = createPeer({
+    name: 'alice',
+    global: {
+      keypair: aliceKeypair,
+    },
+    set: { ghostSpan: SPAN },
+  })
+  const bob = createPeer({ name: 'bob' })
+
+  await alice.db.loaded()
+  await bob.db.loaded()
+
+  // Alice sets up an account and a set
+  const aliceID = await p(alice.db.account.create)({
+    subdomain: 'account',
+    _nonce: 'alice',
+  })
+  await p(alice.set.load)(aliceID)
+  const aliceAccountRoot = alice.db.get(aliceID)
+
+  // Bob knows Alice
+  await p(bob.db.add)(aliceAccountRoot, aliceID)
+
+  // Alice constructs a set
+  await p(alice.set.add)('names', 'Alice')
+  await p(alice.set.add)('names', 'Bob')
+  const mootID = alice.set.getFeedID('names')
+
+  // Assert situation at Alice before sync
+  {
+    const arr = getItems('names', [...alice.db.msgs()])
+    assert.deepEqual(arr, ['Alice', 'Bob'], 'alice has Alice+Bob set')
+  }
+
+  // Assert situation at Bob before sync
+  {
+    const arr = getItems('names', [...bob.db.msgs()])
+    assert.deepEqual(arr, [], 'alice has empty set')
+  }
+
+  // Trigger sync
+  alice.goals.set(mootID, 'set')
+  bob.goals.set(mootID, 'set')
+  const remoteAlice = await p(bob.connect)(alice.getAddress())
+  assert('bob connected to alice')
+  bob.sync.start()
+  await p(setTimeout)(1000)
+  assert('sync!')
+
+  // Assert situation at Bob after sync
+  {
+    const arr = getItems('names', [...bob.db.msgs()])
+    assert.deepEqual(arr, ['Alice', 'Bob'], 'alice has Alice+Bob set')
+  }
+
+  await p(remoteAlice.close)(true)
+  await p(alice.close)(true)
+  await p(bob.close)(true)
+})
 
 //
 // R-?-?-?-?-o-o
@@ -123,7 +185,7 @@ test('sync goal=set with ghostSpan=2', async (t) => {
 
   // Assert situation at Alice before sync
   {
-    const arr = getItems([...alice.db.msgs()])
+    const arr = getItems('follows', [...alice.db.msgs()])
     assert.deepEqual(arr, ['Alice', 'Bob'], 'alice has Alice+Bob set')
   }
   assert.deepEqual(alice.db.ghosts.get(moot.id), [rec1.id, rec2.id])
@@ -139,7 +201,7 @@ test('sync goal=set with ghostSpan=2', async (t) => {
 
   // Assert situation at Alice after sync: she got the branched off msg
   {
-    const arr = getItems([...alice.db.msgs()])
+    const arr = getItems('follows', [...alice.db.msgs()])
     assert.deepEqual(
       arr,
       ['Alice', 'Bob', 'Carol'],
