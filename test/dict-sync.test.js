@@ -181,13 +181,11 @@ test('sync goal=dict with ghostSpan=2', async (t) => {
   }
 
   // Assert situation at Alice before sync
-  {
-    const arr = [...alice.db.msgs()]
-      .map((msg) => msg.data?.update)
-      .filter((x) => !!x)
-      .map((x) => x.age ?? x.name ?? x.gender)
-    assert.deepEqual(arr, [25, 'ALICE'], 'alice has age+name dict')
-  }
+  assert.deepEqual(
+    alice.dict.read(aliceID, 'profile'),
+    { age: 25, name: 'ALICE' },
+    'alice has age+name dict'
+  )
   assert.deepEqual(alice.db.ghosts.get(moot.id), [rec1.id, rec2.id])
 
   // Trigger sync
@@ -200,13 +198,11 @@ test('sync goal=dict with ghostSpan=2', async (t) => {
   assert('sync!')
 
   // Assert situation at Alice before sync: she got the branched off msg
-  {
-    const arr = [...alice.db.msgs()]
-      .map((msg) => msg.data?.update)
-      .filter((x) => !!x)
-      .map((x) => x.age ?? x.name ?? x.gender)
-    assert.deepEqual(arr, [25, 'ALICE', 'w'], 'alice has age+name+gender dict')
-  }
+  assert.deepEqual(
+    alice.dict.read(aliceID, 'profile'),
+    { age: 25, name: 'ALICE', gender: 'w' },
+    'alice has age+name+gender dict'
+  )
   assert.deepEqual(alice.db.ghosts.get(moot.id), [rec2.id])
 
   await p(remoteAlice.close)(true)

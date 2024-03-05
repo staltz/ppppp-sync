@@ -392,3 +392,122 @@ test('sync a feed with goal=newest but too far behind', async (t) => {
   await p(alice.close)(true)
   await p(bob.close)(true)
 })
+
+// Bob replicates a small "newest" part of Carol's feed, then
+// Alice replicates what Bob has, even though she wants more.
+// Finally, Alice replicates from Carol the whole feed.
+test('sync small newest slice of a feed, then the whole feed', async (t) => {
+  const alice = createPeer({ name: 'alice' })
+  const bob = createPeer({ name: 'bob' })
+  const carol = createPeer({ name: 'carol' })
+
+  await alice.db.loaded()
+  await bob.db.loaded()
+  await carol.db.loaded()
+
+  const carolID = await p(carol.db.account.create)({
+    subdomain: 'account',
+    _nonce: 'carol',
+  })
+  const carolIDMsg = carol.db.get(carolID)
+
+  // Alice and Bob know Carol
+  await p(alice.db.add)(carolIDMsg, carolID)
+  await p(bob.db.add)(carolIDMsg, carolID)
+
+  const carolPosts = []
+  for (let i = 1; i <= 9; i++) {
+    const rec = await p(carol.db.feed.publish)({
+      account: carolID,
+      domain: 'post',
+      data: { text: 'm' + i },
+    })
+    carolPosts.push(rec.msg)
+  }
+
+  const carolPostsMootID = carol.db.feed.getID(carolID, 'post')
+  const carolPostsMoot = carol.db.get(carolPostsMootID)
+
+  {
+    const arr = [...bob.db.msgs()]
+      .filter((msg) => msg.metadata.account === carolID && msg.data)
+      .map((msg) => msg.data.text)
+    assert.deepEqual(arr, [], 'bob has nothing from carol')
+  }
+
+  {
+    const arr = [...alice.db.msgs()]
+      .filter((msg) => msg.metadata.account === carolID && msg.data)
+      .map((msg) => msg.data.text)
+    assert.deepEqual(arr, [], 'alice has nothing from carol')
+  }
+
+  alice.goals.set(carolPostsMootID, 'all')
+  bob.goals.set(carolPostsMootID, 'newest-4')
+  carol.goals.set(carolPostsMootID, 'all')
+
+  const bobDialingCarol = await p(bob.connect)(carol.getAddress())
+  assert('bob connected to carol')
+
+  bob.sync.start()
+  await p(setTimeout)(1000)
+  assert('sync!')
+
+  {
+    const arr = [...bob.db.msgs()]
+      .filter((msg) => msg.metadata.account === carolID && msg.data)
+      .map((msg) => msg.data.text)
+    assert.deepEqual(
+      arr,
+      ['m6', 'm7', 'm8', 'm9'],
+      'bob has msgs 6..9 from carol'
+    )
+  }
+
+  await p(bobDialingCarol.close)(true)
+
+  const aliceDialingBob = await p(alice.connect)(bob.getAddress())
+  assert('alice connected to bob')
+
+  alice.sync.start()
+  await p(setTimeout)(1000)
+  assert('sync!')
+
+  {
+    const arr = [...alice.db.msgs()]
+      .filter((msg) => msg.metadata.account === carolID && msg.data)
+      .map((msg) => msg.data.text)
+    assert.deepEqual(
+      arr,
+      ['m6', 'm7', 'm8', 'm9'],
+      'alice has msgs 6..9 from carol'
+    )
+  }
+
+  await p(aliceDialingBob.close)(true)
+
+  const aliceDialingCarol = await p(alice.connect)(carol.getAddress())
+  assert('alice connected to alice')
+
+  alice.sync.start()
+  await p(setTimeout)(2000)
+  assert('sync!')
+
+  {
+    const arr = [...alice.db.msgs()]
+      .filter((msg) => msg.metadata.account === carolID && msg.data)
+      .map((msg) => msg.data.text)
+      .sort()
+    assert.deepEqual(
+      arr,
+      ['m1', 'm2', 'm3', 'm4', 'm5', 'm6', 'm7', 'm8', 'm9'],
+      'alice has msgs 1..9 from carol'
+    )
+  }
+
+  await p(aliceDialingCarol.close)(true)
+
+  await p(alice.close)(true)
+  await p(bob.close)(true)
+  await p(carol.close)(true)
+})
