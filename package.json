@@ -24,6 +24,7 @@
   },
   "dependencies": {
     "bloom-filters": "^3.0.0",
+    "bs58": "^5.0.0",
     "debug": "^4.3.4",
     "promisify-4loc": "^1.0.0",
     "pull-stream": "^3.7.0",
@@ -35,7 +36,6 @@
     "@types/debug": "^4.1.9",
     "@types/pull-stream": "3.6.3",
     "@types/node": "16.x",
-    "bs58": "^5.0.0",
     "c8": "7",
     "ppppp-caps": "github:staltz/ppppp-caps#93fa810b9a40b78aef4872d4c2a8412cccb52929",
     "ppppp-db": "github:staltz/ppppp-db#cf1532965ea1d16929ed2291a9b737a4ce74caac",
